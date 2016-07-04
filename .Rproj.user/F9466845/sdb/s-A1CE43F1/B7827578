@@ -1,0 +1,21 @@
+{
+    "collab_server" : "",
+    "contents" : "# Analysis of BiPOCD data\n# Sebastian Sauer",
+    "created" : 1467625445079.000,
+    "dirty" : true,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "977954937",
+    "id" : "B7827578",
+    "lastKnownWriteTime" : 4294967296,
+    "last_content_update" : 1467625460849,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "tempName" : "Untitled1"
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "---\ntitle: \"Analysis of BiPOCD data\"\nauthor: \"Sebastian Sauer\"\ndate: \"4 Juli 2016\"\noutput: html_document\n---\n\n```{r setup, include=FALSE}\nknitr::opts_chunk$set(echo = FALSE)\n\nlibrary(dplyr)\nlibrary(ggplot2)\nlibrary(tidyr)\nlibrary(readr)\nlibrary(stringr)\nlibrary(ggvis)\nlibrary(pander)\nlibrary(purrr)\nlibrary(caret)\nlibrary(gridExtra)\nlibrary(ggstance)\n\n\n# define paths\npath_data <- \"~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/raw_data\"\npath_file_data <- \"~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/raw_data/BiPOCD prediction.csv\"\npath_code <- \"~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/R_code\"\npath_figs <- \"~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/Figures\"\npath_obj <- \"~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/data_objects\"\n\n# load data\ndata <- read_csv(path_file_data)\n\n\n# constants\nred1 <- \"#880011\"\n```\n\n# First glimpse\n\n```{r}\nglimpse(data)\n```\n\n\n##  Variable names\nThe main (raw) data file has a dimension of `r dim(data)` (rows*cols). The col names are:\n\n```{r}\nnames(data)\n```\n\n\n## Summaries of variables\n\n```{r}\ndata %>% \n  do(summary_num = summary(.)) -> sums\nsums$summary_num\n\n\ndata %>% \n  select_if(is.numeric) %>% \n  ncol  # number of numeric variables\n\n\ndata %>% \n  select_if(negate(is.numeric)) %>% \n  ncol  # number of non-numeric variables\n\n```\n\n\n## Histograms of quantitative variables\n\n```{r histograms_numeric, cache = TRUE}\ndata %>% \n  select_if(is.numeric) %>% \n  gather(key = variable, value = value) %>% \n  ggplot(aes(x = value)) + \n  geom_histogram() + \n  facet_wrap(~variable, scales = \"free\", ncol = 10)\n\n```\n\n\n## Histogram of non-numeric variables\n\n```{r, cache = TRUE}\n\n\ndata %>% \n  select_if(negate(is.numeric)) %>% \n  gather %>% \n  ggplot(aes(x = value)) + geom_barh() +\n  facet_grid(.~key, scales = 'free')\n\n\n\n```\n\n\n## Check for (Near) Zero variables\n\n```{r}\ndata %>% \n  select(-ID) %>% \n  select_if(is.numeric) %>% \n  nearZeroVar(., saveMetrics = TRUE) %>% \n  pander\n```\n\n",
+    "created" : 1467625476719.000,
+    "dirty" : true,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1993739455",
+    "id" : "1DA616E6",
+    "lastKnownWriteTime" : 1467633821,
+    "last_content_update" : 1467657738043,
+    "path" : "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/R_code/Analysis_BiPOCD.Rmd",
+    "project_path" : "R_code/Analysis_BiPOCD.Rmd",
+    "properties" : {
+        "chunk_rendered_width" : "650",
+        "tempName" : "Untitled2"
+    },
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}

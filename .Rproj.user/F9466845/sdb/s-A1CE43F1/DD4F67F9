@@ -1,0 +1,28 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1467622147091.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "DD4F67F9",
+    "lastKnownWriteTime" : 4318384896,
+    "last_content_update" : 1467622147091,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "6a41vehetx",
+        "caption" : "BiPOCD.prediction",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=BiPOCD.prediction&cache_key=6a41vehetx",
+        "displayedObservations" : 61,
+        "environment" : "",
+        "object" : "BiPOCD.prediction",
+        "totalObservations" : 61,
+        "variables" : 169
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}
