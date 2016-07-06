@@ -1,10 +1,4 @@
 base
-methods
-datasets
-utils
-grDevices
-graphics
-stats
 dplyr
 ggplot2
 tidyr
@@ -15,3 +9,8 @@ pander
 purrr
 lattice
 caret
+broom
+ggstance
+knitr
+gridExtra
+tibble

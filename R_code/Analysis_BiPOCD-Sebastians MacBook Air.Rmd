@@ -8,7 +8,9 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, cache = TRUE)
 
-library(mosaic)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
 library(readr)
 library(stringr)
 library(ggvis)
@@ -20,11 +22,6 @@ library(ggstance)
 library(knitr)
 library(gridExtra)
 library(tibble)
-library(corrplot)
-library(GGally)
-library(dplyr)
-library(ggplot2)
-library(tidyr)
 
 
 
@@ -64,20 +61,6 @@ add_na_col <- function(x){
 has_n_col <- function(x, n = 6){
   return(ncol(x) == n)
 }
-
-
-
-tally_OR <- function(x, data = data_comorb){
-  tab <- mosaic::tally(x ~ responder_3m, data = data_comorb)
-  oddsRatio(tab)
-}
-
-
-tally_RR <- function(x, data = data_comorb){
-  tab <- mosaic::tally(x ~ responder_3m, data = data_comorb)
-  relrisk(tab)
-}
-
 
 ```
 
@@ -147,22 +130,18 @@ Predictors without (much) variance do not add to the model. Better exclude them,
 ```{r}
 data %>% 
   select(-ID) %>% 
+  select_if(is.numeric) %>% 
   nearZeroVar(., saveMetrics = TRUE) %>% 
   pander
 
 data %>% 
+  select(-ID) %>% 
+  select_if(is.numeric) %>% 
   nearZeroVar(., saveMetrics = TRUE) %>% 
-  rownames_to_column() %>% 
-  filter(nzv == TRUE) -> data_nzv
-
-nzv_vars <- data_nzv$rowname
-
-
-pander(data_nzv)
-
+  filter(nzv == TRUE) %>% 
+  pander
 ```
 
-The variables with near zero variance are `r nzv_var`.
 
 ## Check for highly correlated variables
 Highly correlated (>.90) do not provide more information, better exclude them.
@@ -190,88 +169,5 @@ No variables are highly correlated (>.90) in this dataset.
   ggplot(aes(x  = rowname, y = na, label = na)) + geom_bar(stat = "identity") +
   coord_flip() +
   ggtitle("Number of missing values per variable")
-```
-
-
-
-## Checking Scale quality
-
-### Correlation of comorbidity
-
-```{r}
-
-
-data %>% 
-  select(Depression:GAD) %>% 
-  select(-one_of(nzv_vars)) %>% 
-  cor -> cor_comorb
-
-corrplot(cor_comorb)
-
-
-data %>% 
-  dplyr::select(dplyr::contains("ChOCI")) %>% 
-  select(-one_of(nzv_vars)) %>% 
-  cor %>% 
-  corrplot
-
-
-data %>% 
-  dplyr::select(dplyr::contains("ChOCI")) %>% 
-  select(-one_of(nzv_vars)) %>% 
-  dim
-```
-
-
-# Bivariate assocations
-
-## Associations with treatement response
-
-### Comorbidity as predictors
-
-
-```{r}
-data %>% 
-  select(Depression:GAD, responder_3m) %>% 
-  select(-one_of(nzv_vars)) %>% 
-  na.omit -> data_comorb
-
-
-comorb_OR <-
-  lapply(select(data_comorb, -responder_3m), 
-         function(x) tally_OR(x))
-
-comorb_RR <-
-  lapply(select(data_comorb, - responder_3m),
-         function(x) tally_RR(x))
-```
- 
-The Odds ratios of the comorbities with the outcome variable are: `r comorb_OR`.
-
-The relative risks of the comorbities with the outcome variable are: `r comorb_RR`.
-
-
-```{r}
-
-# relative risks:
-comorb_RR_df <- data_frame(comorb_diag = names(comorb_RR),
-                           RelRisk = unlist(comorb_RR))
-
-
-
-comorb_RR_df %>% 
-  ggplot(aes(x = reorder(comorb_diag, RelRisk), y = RelRisk)) + geom_point() +
-  coord_flip() +
-  ggtitle("Relative Risks of comorbity diagnoses")
-
-
-# odds ratios:
-comorb_OR_df <- data_frame(comorb_diag = names(comorb_OR),
-                           OR = unlist(comorb_OR))
-
-comorb_OR_df %>% 
-  ggplot(aes(x = reorder(comorb_diag, OR), y = OR)) + geom_point() +
-  coord_flip() +
-  ggtitle("Odds Ratio of comorbity diagnoses")
 ```
 
