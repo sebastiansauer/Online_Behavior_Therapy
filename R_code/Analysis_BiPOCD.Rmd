@@ -25,6 +25,8 @@ library(GGally)
 library(dplyr)
 library(ggplot2)
 library(tidyr)
+library(gridExtra)
+library(ggstance)
 
 
 
@@ -131,11 +133,14 @@ data %>%
 
 ```{r, cache = TRUE}
 
+  
 data %>% 
-  select_if(negate(is.numeric)) %>% 
-  lapply(., function(x) gg_bar(x)) -> gg_bar_list
+    select_if(negate(is.numeric)) %>% 
+    gather %>% 
+    ggplot(aes(x = value)) + geom_barh() +
+    facet_wrap(~key)
 
-do.call(grid.arrange, gg_bar_list)
+
 
 ```
 
