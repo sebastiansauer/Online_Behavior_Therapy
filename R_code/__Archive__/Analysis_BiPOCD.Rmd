@@ -1,0 +1,277 @@
+---
+title: "Analysis of BiPOCD data"
+author: "Sebastian Sauer"
+date: "4 Juli 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache = TRUE)
+
+library(mosaic)
+library(readr)
+library(stringr)
+library(ggvis)
+library(pander)
+library(purrr)
+library(caret)
+library(broom)
+library(ggstance)
+library(knitr)
+library(gridExtra)
+library(tibble)
+library(corrplot)
+library(GGally)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+
+
+
+# define paths
+path_data <- "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/raw_data"
+path_file_data <- "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/raw_data/BiPOCD prediction.csv"
+path_code <- "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/R_code"
+path_figs <- "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/Figures"
+path_obj <- "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/data_objects"
+
+# load data
+data <- read_csv(path_file_data)
+
+
+# constants
+red1 <- "#880011"
+```
+
+
+
+
+```{r funs}
+
+gg_bar <- function(x, ...){
+  { 
+    ggplot(data_frame(x), aes(x = x)) + 
+      geom_bar() +
+      coord_flip() 
+  }
+}
+
+
+add_na_col <- function(x){
+   mutate(x, na = 0)
+}
+
+has_n_col <- function(x, n = 6){
+  return(ncol(x) == n)
+}
+
+
+
+tally_OR <- function(x, data = data_comorb){
+  tab <- mosaic::tally(x ~ responder_3m, data = data_comorb)
+  oddsRatio(tab)
+}
+
+
+tally_RR <- function(x, data = data_comorb){
+  tab <- mosaic::tally(x ~ responder_3m, data = data_comorb)
+  relrisk(tab)
+}
+
+
+```
+
+
+
+# First glimpse
+
+```{r}
+glimpse(data)
+```
+
+
+##  Variable names
+The main (raw) data file has a dimension of `r dim(data)` (rows*cols). The col names are:
+
+```{r}
+names(data)
+```
+
+# Overviews
+## Summaries of quantitative variables
+
+```{r}
+
+
+data %>% 
+  select_if(is.numeric)  %>% 
+  lapply(., function(x) tidy(summary(x))) %>%   # compute tidy summary of each var
+  map_if(., has_n_col, add_na_col) %>%   # add na-col if missing
+  do.call(rbind, .) -> sum_num  # bind list elements into df
+
+kable(sum_num)
+
+```
+
+
+## Histograms of quantitative variables
+
+```{r histograms_numeric, cache = TRUE, fig.width = 16, figh.height = 20}
+data %>% 
+  select_if(is.numeric) %>% 
+  gather(key = variable, value = value) %>% 
+  ggplot(aes(x = value)) + 
+  geom_histogram() + 
+  facet_wrap(~variable, scales = "free", ncol = 5)
+
+```
+
+
+## Histogram of non-numeric variables
+
+```{r, cache = TRUE}
+
+data %>% 
+  select_if(negate(is.numeric)) %>% 
+  lapply(., function(x) gg_bar(x)) -> gg_bar_list
+
+do.call(grid.arrange, gg_bar_list)
+
+```
+
+
+## Check for (Near) Zero variance (nz/nzv) variables
+
+Predictors without (much) variance do not add to the model. Better exclude them, at least know them.
+
+```{r}
+data %>% 
+  select(-ID) %>% 
+  nearZeroVar(., saveMetrics = TRUE) %>% 
+  pander
+
+data %>% 
+  nearZeroVar(., saveMetrics = TRUE) %>% 
+  rownames_to_column() %>% 
+  filter(nzv == TRUE) -> data_nzv
+
+nzv_vars <- data_nzv$rowname
+
+
+pander(data_nzv)
+
+```
+
+The variables with near zero variance are `r nzv_var`.
+
+## Check for highly correlated variables
+Highly correlated (>.90) do not provide more information, better exclude them.
+
+```{r}
+
+data %>% 
+  select_if(is.numeric) %>% 
+  cor -> data_cor
+
+highCorr <- sum(abs(data_cor[upper.tri(data_cor)]) > .90)
+highCorr
+```
+
+No variables are highly correlated (>.90) in this dataset.
+
+
+## Missing values
+
+```{r}
+ sum_num %>% 
+  select(na) %>% 
+  rownames_to_column %>% 
+  filter(na != 0) %>% 
+  ggplot(aes(x  = rowname, y = na, label = na)) + geom_bar(stat = "identity") +
+  coord_flip() +
+  ggtitle("Number of missing values per variable")
+```
+
+
+
+## Checking Scale quality
+
+### Correlation of comorbidity
+
+```{r}
+
+
+data %>% 
+  select(Depression:GAD) %>% 
+  select(-one_of(nzv_vars)) %>% 
+  cor -> cor_comorb
+
+corrplot(cor_comorb)
+
+
+data %>% 
+  dplyr::select(dplyr::contains("ChOCI")) %>% 
+  select(-one_of(nzv_vars)) %>% 
+  cor %>% 
+  corrplot
+
+
+data %>% 
+  dplyr::select(dplyr::contains("ChOCI")) %>% 
+  select(-one_of(nzv_vars)) %>% 
+  dim
+```
+
+
+# Bivariate assocations
+
+## Associations with treatement response
+
+### Comorbidity as predictors
+
+
+```{r}
+data %>% 
+  select(Depression:GAD, responder_3m) %>% 
+  select(-one_of(nzv_vars)) %>% 
+  na.omit -> data_comorb
+
+
+comorb_OR <-
+  lapply(select(data_comorb, -responder_3m), 
+         function(x) tally_OR(x))
+
+comorb_RR <-
+  lapply(select(data_comorb, - responder_3m),
+         function(x) tally_RR(x))
+```
+ 
+The Odds ratios of the comorbities with the outcome variable are: `r comorb_OR`.
+
+The relative risks of the comorbities with the outcome variable are: `r comorb_RR`.
+
+
+```{r}
+
+# relative risks:
+comorb_RR_df <- data_frame(comorb_diag = names(comorb_RR),
+                           RelRisk = unlist(comorb_RR))
+
+
+
+comorb_RR_df %>% 
+  ggplot(aes(x = reorder(comorb_diag, RelRisk), y = RelRisk)) + geom_point() +
+  coord_flip() +
+  ggtitle("Relative Risks of comorbity diagnoses")
+
+
+# odds ratios:
+comorb_OR_df <- data_frame(comorb_diag = names(comorb_OR),
+                           OR = unlist(comorb_OR))
+
+comorb_OR_df %>% 
+  ggplot(aes(x = reorder(comorb_diag, OR), y = OR)) + geom_point() +
+  coord_flip() +
+  ggtitle("Odds Ratio of comorbity diagnoses")
+```
+
