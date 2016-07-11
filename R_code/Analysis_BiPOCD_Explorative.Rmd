@@ -279,7 +279,7 @@ corrplot(cor_comorb)
 
 We should do this more stringently, but let's start with a brief look to the items of `ChOCI`, to see whether they are correlated (as they should be, at least for common subscale-items). Those are quite a few.
 
-```{r, fig.height = 50}
+```{r, fig.height = 20, out.height = 20, cache = TRUE}
 
 data %>%
   dplyr::select(dplyr::contains("ChOCI")) %>%
@@ -290,15 +290,17 @@ data %>%
 ```
 
 
-### ChOCI
+### ChOCI R C
 
 
 ```{r, warning = FALSE}
-data %>%
-  dplyr::select(dplyr::contains("ChOCI")) %>%
-  select(-one_of(nzv_vars))  -> ChOCI_items
+search_string <- "ChOCI_R_C"
+search_string2 <- "sum"
 
-psych::alpha(ChOCI_items, check.keys = TRUE)
+data %>%
+  dplyr::select(dplyr::matches(search_string), -dplyr::matches(search_string2)) -> ChOCI_items
+
+print(psych::alpha(data.frame(ChOCI_items), check.keys = TRUE))
 
 ```
 
@@ -306,6 +308,23 @@ psych::alpha(ChOCI_items, check.keys = TRUE)
 ---
 One item was **negatively** correlated with the scale (`ChOCI_R_C_26_PRE-`). It should be checked.
 ---
+
+
+### ChOCI R P
+
+
+```{r, warning = FALSE}
+search_string <- "ChOCI_R_P"
+search_string2 <- "sum"
+
+data %>%
+  dplyr::select(dplyr::matches(search_string), -dplyr::matches(search_string2)) -> ChOCI_items_2
+
+print(psych::alpha(data.frame(ChOCI_items_2), check.keys = TRUE))
+
+```
+
+
 
 
 ### CYBOCS
@@ -316,8 +335,9 @@ One item was **negatively** correlated with the scale (`ChOCI_R_C_26_PRE-`). It 
 search_string <- "CYBOCS"
 search_string2 <- "sum"
 data %>%
-  dplyr::select(dplyr::matches(search_string), -matches(search_string2)) %>%
-  print(psych::alpha(., check.keys = TRUE))
+  dplyr::select(dplyr::matches(search_string), -matches(search_string2)) -> cybocs_items
+
+print(psych::alpha(data.frame(cybocs_items), check.keys = TRUE))
 
 ```
 
@@ -368,6 +388,8 @@ data %>%
 
 
 
+### FAS
+
 
 ```{r}
 search_string <- "FAS"
@@ -380,19 +402,7 @@ data %>%
 ```
 
 
-
-
-
-
-```{r}
-search_string <- "EWSASP"
-search_string2 <- "sum"
-
-data %>%
-  dplyr::select(matches(search_string), -matches(search_string2)) -> EWSASP_items
-  psych::alpha(data.frame(EWSASP_items))
-
-```
+### EWSAP
 
 
 
@@ -405,7 +415,6 @@ data %>%
   psych::alpha(data.frame(EWSASP_items))
 
 ```
-
 
 
 
@@ -452,7 +461,7 @@ RR_comorb_df$RR_comorb <- unlist(lapply(comorb_RR, function(x) round(x, 2)))
 The (non-nzv) comorbities are: `r names(data_comorb)[-8]`. The Odds ratios of the comorbities with the outcome variable are: `r lapply(comorb_OR, function(x) round(x, 2))`. The odds are computed in favor of treatment success.
 
 ```{r}
-kable(OR_comorb_df)
+datatable(OR_comorb_df)
 ```
 
 
@@ -460,7 +469,7 @@ The relative risks of the comorbities with the outcome variable are: `r sort(unl
 
 
 ```{r}
-kable(RR_comorb_df)
+datatable(RR_comorb_df)
 ```
 
 
