@@ -354,7 +354,8 @@ search_string2 <- "sum"
 
 data %>%
   dplyr::select(EWSASC_schoolandwork_PRE:EWSASC_family_PRE) -> EWSASC_items
-  psych::alpha(data.frame(EWSASC_items))
+
+psych::alpha(data.frame(EWSASC_items))
 
 ```
 
