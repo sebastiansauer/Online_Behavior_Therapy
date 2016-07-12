@@ -12,12 +12,16 @@ output:
 
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(echo = FALSE, cache = TRUE, warning = FALSE, message = FALSE)
 
-library(dplyr)
-library(ggplot2)
+
+library(knitr)
+library(readr)
 library(tidyr)
 library(caret)
+library(ggplot2)
+library(tibble)
+library(dplyr)
 
 
 
@@ -69,24 +73,183 @@ data %>%
 
 
 
+
+# data_short -- variables used for modeling
+
+
+data %>%
+  caret::nearZeroVar(., saveMetrics = TRUE) %>%
+  tibble::rownames_to_column() %>%
+  filter(nzv == TRUE) -> data_nzv
+
+nzv_vars <- data_nzv$rowname
+
+data %>% 
+  select(dplyr::contains("sum"),  # sumscores of scales
+         Depression:numberdiagnos,  # comorbidity
+         sex:OCD_treatm_exp,  # demographics
+         responder_3m_f, CYBOCS_3m,  # outcome
+         -one_of(nzv_vars)) ->  # exclude nzv variables
+  data_mod
+
+
+# write_csv(data_mod, path = "data_mod.csv")
+
+
+
+# list with modeling results
+
+mod_results <- vector(mode = "list")
+
+
+```
+
+
+
+# Replace/omit missing values
+
+
+How many missings do we have?
+
+```{r}
+data_mod %>% select_if(function(col) sum(is.na(col)) != 0) %>% names
+
+
+data_mod %>% 
+  select_if(function(col) sum(is.na(col)) != 0) %>% 
+  summarise_each(funs(sum(is.na(.)))) %>% 
+  kable
+```
+
+Oh no! Some NA's in our outcome variable, that's is a sad story. That reduces the sample size. Ok, then be hard now. At least the 5 missings occur in both variables for the same cases. Good bye, guys.
+
+```{r}
+data_mod %>% 
+  filter(!is.na(responder_3m_f), !is.na(CYBOCS_3m)) -> data_mod
+```
+
+The dimension of our data set is now `r dim(data_mod)`.
+
+
+What about the rest of the variables with NAs? They do have quite a number of NAs, and the variables do not appear so important. So let's omit these variables.
+
+```{r}
+data_mod %>% 
+  dplyr::select(-OCDonset, -yearswithOCD) -> data_mod
+```
+
+Now the dimension of our data set is: `r dim(data_mod)`.
+
+
+# Separate train and test dataset
+
+Let's split the data set in two parts, for training (80%) and for testing, to avoid bias from overfitting.
+
+```{r}
 set.seed(42)
-data_sumscores %>% na.omit -> data_sumscores
-trainIndex <- createDataPartition(data_sumscores$responder_3m_f, p = .8,
+trainIndex <- createDataPartition(data_mod$responder_3m_f, p = .7,
                                   list = FALSE,
                                   times = 1)
 
-train <- data[trainIndex, ]
-test <- data[-trainIndex, ]
+train <- data_mod[trainIndex, ]
+test <- data_mod[-trainIndex, ]
+```
+
+
+
+# Factor variables with sparsely populated levels -- exclude
+
+Some variables are sparsely populated, e.g.:
+
+```{r}
+ data_mod %>% 
+  select(medication) %>% 
+  group_by(medication) %>% 
+  summarise(n = n()) %>%
+  kable
+```
+
+
+Some probems occured with the sparse levels. Better exclude it.
+
+```{r}
+
+sparse_vars <- c("medication", "Education_parent", "OCD_treatm_exp", "Birthcountry", "treatm_exp")
+
+data_mod %>% 
+  dplyr::select(-one_of(sparse_vars)) -> data_mod
+
+
+```
+
+The factor variables with sparse levels (now excluded) are: `r sparse_vars`.
+
+
+
+
+# classification (dichotomous)
+
+As we have two outcomes, one dichotomous and one metric, we can both do classification and regression. Let's look at classification first.
+
+
+Before I forget: we need to exclude the metric outcome variable.
+
+```{r}
+data_mod %>% 
+  select(-CYBOCS_3m) -> data_class
+
+set.seed(42)
+trainIndex <- createDataPartition(data_class$responder_3m_f, p = .7,
+                                  list = FALSE,
+                                  times = 1)
+
+train <- data_class[trainIndex, ]
+test <- data_class[-trainIndex, ]
 
 
 ```
 
 
+## LM
+
+Let's fit a linear logistic model. The model showed some problems with factor variables that have sparsely populated levels. 
 
 
-```{r lm1}
+
+
+```{r}
+
+ctrl <- trainControl(method = "repeatedcv", repeats = 3)
+
+glmfit1 <- train(responder_3m_f ~ .,
+                 data = train,
+                 method = "glm",
+                 trControl = ctrl,
+                 preProc = c("center", "scale"))
+
+
+glmfit1_pred <- predict(glmfit1, newdata = test)
+
+(mod_results[[1]] <- confusionMatrix(data = glmfit1_pred, test$responder_3m_f))
+mod_results[[1]]$name <- "glmfit1"
+mod_results[[1]]$varimp <- varImp(glmfit1, scale = FALSE)
 
 ```
 
+Classification rate was ...bad...? But now look at the variable importance. Note: 
+ >Linear Models: the absolute value of the t–statistic for each model parameter is used. 
 
+(From caret help `varimp`.)
+
+
+```{r lm1_varimp}
+mod_results[[1]]$varimp[[1]] %>% 
+  select(everything()) %>% 
+  rownames_to_column %>% 
+  arrange(desc(Overall))%>% 
+  top_n(5) %>% 
+  kable
+```
+
+Only top-5 shown.
 

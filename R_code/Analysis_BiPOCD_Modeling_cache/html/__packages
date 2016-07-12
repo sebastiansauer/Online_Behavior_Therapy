@@ -1,0 +1,9 @@
+base
+knitr
+readr
+tidyr
+lattice
+ggplot2
+caret
+tibble
+dplyr
