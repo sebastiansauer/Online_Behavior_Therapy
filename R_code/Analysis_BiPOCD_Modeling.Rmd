@@ -1,0 +1,92 @@
+---
+title: "BiPOCD_modeling"
+author: "Sebastian Sauer"
+date: "11 Juli 2016"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: true
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(caret)
+
+
+
+# define paths
+path_data <- "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/raw_data"
+path_file_data <- "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/raw_data/BiPOCD_raw_data.csv"
+path_code <- "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/R_code"
+path_figs <- "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/figs"
+path_obj <- "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/data_objects"
+
+# load data
+data <- read_csv(path_file_data)
+
+
+# constants
+red1 <- "#880011"
+
+
+# some important sub data sets
+
+search_string <- "sum"
+data %>% 
+  select(contains("sum")) -> data_sumscores
+
+
+data %>% 
+  mutate(responder_3m_f = factor(responder_3m)) -> data
+
+data$responder_3m_f <- relevel(data$responder_3m_f, ref = "1")
+
+
+data_sumscores$responder_3m_f <- data$responder_3m_f
+data_sumscores$CYBOCS_3m <- data$CYBOCS_3m
+
+
+
+data %>%
+  nearZeroVar(., saveMetrics = TRUE) %>%
+  rownames_to_column() %>%
+  filter(nzv == TRUE) -> data_nzv
+
+nzv_vars <- data_nzv$rowname
+
+
+data %>%
+  select(Depression:GAD, responder_3m, responder_3m_f) %>%
+  select(-one_of(nzv_vars)) %>%
+  na.omit -> data_comorb
+
+
+
+set.seed(42)
+data_sumscores %>% na.omit -> data_sumscores
+trainIndex <- createDataPartition(data_sumscores$responder_3m_f, p = .8,
+                                  list = FALSE,
+                                  times = 1)
+
+train <- data[trainIndex, ]
+test <- data[-trainIndex, ]
+
+
+```
+
+
+
+
+```{r lm1}
+
+```
+
+
+
