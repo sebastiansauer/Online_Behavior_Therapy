@@ -42,10 +42,6 @@ red1 <- "#880011"
 
 # some important sub data sets
 
-search_string <- "sum"
-data %>% 
-  select(contains("sum")) -> data_sumscores
-
 
 data %>% 
   mutate(responder_3m_f = factor(responder_3m)) -> data
@@ -66,10 +62,10 @@ data %>%
 nzv_vars <- data_nzv$rowname
 
 
-data %>%
-  select(Depression:GAD, responder_3m, responder_3m_f) %>%
-  select(-one_of(nzv_vars)) %>%
-  na.omit -> data_comorb
+# data %>%
+#   select(Depression:GAD, responder_3m, responder_3m_f) %>%
+#   select(-one_of(nzv_vars)) %>%
+#   na.omit -> data_comorb
 
 
 
@@ -84,13 +80,7 @@ data %>%
 
 nzv_vars <- data_nzv$rowname
 
-data %>% 
-  select(dplyr::contains("sum"),  # sumscores of scales
-         Depression:numberdiagnos,  # comorbidity
-         sex:OCD_treatm_exp,  # demographics
-         responder_3m_f, CYBOCS_3m,  # outcome
-         -one_of(nzv_vars)) ->  # exclude nzv variables
-  data_mod
+
 
 
 # write_csv(data_mod, path = "data_mod.csv")
@@ -99,9 +89,44 @@ data %>%
 
 # list with modeling results
 
-mod_results <- vector(mode = "list")
+mod_results <- vector(mode = "list", length = 10)
 
 
+```
+
+
+# Variables for modeling
+
+What variables should be included, and which not?
+
+Include:
+
+- sum scores
+- demographics
+- outcome
+- CYBOCS (all)
+- CGI_S_pre
+- symptoms: Checking, Obsessions, contamination und symmetry
+
+Exclude:
+
+- nzv variables (near zero variance)
+- single items, if collapsed in sum score
+
+
+(Plus ID variable for joins etc.)
+
+```{r data_mod}
+data %>% 
+  dplyr::select(dplyr::matches("sum|CYBOCS"),  # sumscores of scales OR CYBOCS
+         Depression:numberdiagnos,  # comorbidity
+         sex:OCD_treatm_exp,  # demographics
+         responder_3m_f, CYBOCS_3m,  # outcome
+         CGI_S_pre,  # clincial rating of symptoms
+         checking, obsessions, contamination, symmetry, # symptoms
+         ID, 
+         -one_of(nzv_vars)) ->  # exclude nzv variables
+  data_mod
 ```
 
 
@@ -163,7 +188,7 @@ Some variables are sparsely populated, e.g.:
 
 ```{r}
  data_mod %>% 
-  select(medication) %>% 
+  dplyr::select(medication) %>% 
   group_by(medication) %>% 
   summarise(n = n()) %>%
   kable
@@ -196,7 +221,7 @@ Before I forget: we need to exclude the metric outcome variable.
 
 ```{r}
 data_mod %>% 
-  select(-CYBOCS_3m) -> data_class
+  dplyr::select(-CYBOCS_3m) -> data_class  # note the new name!
 
 set.seed(42)
 trainIndex <- createDataPartition(data_class$responder_3m_f, p = .7,
@@ -212,14 +237,16 @@ test <- data_class[-trainIndex, ]
 
 ## LM
 
-Let's fit a linear logistic model. The model showed some problems with factor variables that have sparsely populated levels. 
+Let's fit a linear logistic model. The model showed some problems with factor variables that have sparsely populated levels. Additionally, the ratio of variables to observations is not really nice. We probably will not arrive anywhere with this model.
 
 
 
 
-```{r}
+```{r, warning = TRUE, message = TRUE}
 
-ctrl <- trainControl(method = "repeatedcv", repeats = 3)
+ctrl <- trainControl(method = "repeatedcv", 
+                     repeats = 10,
+                     number = 100)
 
 glmfit1 <- train(responder_3m_f ~ .,
                  data = train,
@@ -230,14 +257,19 @@ glmfit1 <- train(responder_3m_f ~ .,
 
 glmfit1_pred <- predict(glmfit1, newdata = test)
 
-(mod_results[[1]] <- confusionMatrix(data = glmfit1_pred, test$responder_3m_f))
+
+
+mod_results[[1]]$fit <- glmfit1
+(mod_results[[1]]$confusionMatrix <- confusionMatrix(data = glmfit1_pred, test$responder_3m_f))
 mod_results[[1]]$name <- "glmfit1"
 mod_results[[1]]$varimp <- varImp(glmfit1, scale = FALSE)
 
 ```
 
+
 Classification rate was ...bad...? But now look at the variable importance. Note: 
- >Linear Models: the absolute value of the t–statistic for each model parameter is used. 
+
+> Linear Models: the absolute value of the t–statistic for each model parameter is used. 
 
 (From caret help `varimp`.)
 
@@ -252,4 +284,84 @@ mod_results[[1]]$varimp[[1]] %>%
 ```
 
 Only top-5 shown.
+
+Let's look at McFadden's pseudo R^2.
+
+```{r, warning = TRUE, echo = TRUE, message = TRUE}
+library(pscl)
+glmfit1 <- glm(responder_3m_f ~ ., 
+               data = train,
+               family = "binomial",
+               control = list(maxit = 50))
+pR2(glmfit1)
+```
+
+Here, the algorithm tells us that we ran into problems; it may well be that we have too many predictors. MacFadden's R^2 is 1; appears to good to be true.
+
+
+
+Although not undebated among statisticians, let's try a stepwise regression instead.
+
+## Stepwise LM
+
+```{r}
+ctrl <- trainControl(method = "repeatedcv", 
+                     repeats = 3,
+                     number = 50)  # n of interations for convertion
+
+glmfit2 <- train(responder_3m_f ~ .,
+                 data = train,
+                 method = "glmStepAIC",
+                 trControl = ctrl,
+                 preProc = c("center", "scale"))
+
+
+glmfit2_pred <- predict(glmfit2, newdata = test)
+length(glmfit1_pred)
+
+
+
+mod_results[[2]]$fit <- glmfit2
+(mod_results[[2]]$confusionMatrix <- confusionMatrix(data = glmfit2_pred, test$responder_3m_f))
+mod_results[[2]]$name <- "glmfit2"
+mod_results[[2]]$varimp <- varImp(glmfit2, scale = FALSE)
+
+```
+
+Results are well, modest. 
+
+We should try to reduce the number of features.
+
+# Feature selection
+
+Feature selection is a mixture of art and science. And, domain knowledge plays a vital, pivotal role. 
+
+My best guess to compile a "hard core" of predictors would be the following:
+
+- sum scores of psychometrics, including CYBOC_pre_total
+- yearswithOCD
+- numberdiagnos
+- CGI_S_pre
+
+```{r data_mod2}
+data_class %>% 
+  dplyr::select(dplyr::contains("sum"),
+         numberdiagnos,
+         CYBOC_pre_total,
+         CGI_S_pre,
+         ID
+         ) %>% 
+  left_join({data %>% select(ID, yearswithOCD)}) -> data_class2
+
+
+set.seed(42)
+trainIndex <- createDataPartition(data_class$responder_3m_f, p = .7,
+                                  list = FALSE,
+                                  times = 1)
+
+train <- data_class[trainIndex, ]
+test <- data_class[-trainIndex, ]
+
+```
+
 

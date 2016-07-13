@@ -123,17 +123,37 @@ $(document).ready(function () {
 
 <div id="TOC">
 <ul>
-<li><a href="#replaceomit-missing-values"><span class="toc-section-number">1</span> Replace/omit missing values</a></li>
-<li><a href="#separate-train-and-test-dataset"><span class="toc-section-number">2</span> Separate train and test dataset</a></li>
-<li><a href="#factor-variables-with-sparsely-populated-levels-exclude"><span class="toc-section-number">3</span> Factor variables with sparsely populated levels – exclude</a></li>
-<li><a href="#classification-dichotomous"><span class="toc-section-number">4</span> classification (dichotomous)</a><ul>
-<li><a href="#lm"><span class="toc-section-number">4.1</span> LM</a></li>
+<li><a href="#variables-for-modeling"><span class="toc-section-number">1</span> Variables for modeling</a></li>
+<li><a href="#replaceomit-missing-values"><span class="toc-section-number">2</span> Replace/omit missing values</a></li>
+<li><a href="#separate-train-and-test-dataset"><span class="toc-section-number">3</span> Separate train and test dataset</a></li>
+<li><a href="#factor-variables-with-sparsely-populated-levels-exclude"><span class="toc-section-number">4</span> Factor variables with sparsely populated levels – exclude</a></li>
+<li><a href="#classification-dichotomous"><span class="toc-section-number">5</span> classification (dichotomous)</a><ul>
+<li><a href="#lm"><span class="toc-section-number">5.1</span> LM</a></li>
+<li><a href="#stepwise-lm"><span class="toc-section-number">5.2</span> Stepwise LM</a></li>
 </ul></li>
 </ul>
 </div>
 
+<div id="variables-for-modeling" class="section level1">
+<h1><span class="header-section-number">1</span> Variables for modeling</h1>
+<p>What variables should be included, and which not?</p>
+<p>Include:</p>
+<ul>
+<li>sum scores</li>
+<li>demographics</li>
+<li>outcome</li>
+<li>CYBOCS (all)</li>
+<li>CGI_S_pre</li>
+<li>symptoms: Checking, Obsessions, contamination und symmetry</li>
+</ul>
+<p>Exclude:</p>
+<ul>
+<li>nzv variables (near zero variance)</li>
+<li>single items, if collapsed in sum score</li>
+</ul>
+</div>
 <div id="replaceomit-missing-values" class="section level1">
-<h1><span class="header-section-number">1</span> Replace/omit missing values</h1>
+<h1><span class="header-section-number">2</span> Replace/omit missing values</h1>
 <p>How many missings do we have?</p>
 <pre><code>## [1] &quot;OCDonset&quot;       &quot;yearswithOCD&quot;   &quot;responder_3m_f&quot; &quot;CYBOCS_3m&quot;</code></pre>
 <table>
@@ -160,11 +180,11 @@ $(document).ready(function () {
 <p>Now the dimension of our data set is: 56, 31.</p>
 </div>
 <div id="separate-train-and-test-dataset" class="section level1">
-<h1><span class="header-section-number">2</span> Separate train and test dataset</h1>
+<h1><span class="header-section-number">3</span> Separate train and test dataset</h1>
 <p>Let’s split the data set in two parts, for training (80%) and for testing, to avoid bias from overfitting.</p>
 </div>
 <div id="factor-variables-with-sparsely-populated-levels-exclude" class="section level1">
-<h1><span class="header-section-number">3</span> Factor variables with sparsely populated levels – exclude</h1>
+<h1><span class="header-section-number">4</span> Factor variables with sparsely populated levels – exclude</h1>
 <p>Some variables are sparsely populated, e.g.:</p>
 <table>
 <thead>
@@ -200,12 +220,74 @@ $(document).ready(function () {
 <p>The factor variables with sparse levels (now excluded) are: medication, Education_parent, OCD_treatm_exp, Birthcountry, treatm_exp.</p>
 </div>
 <div id="classification-dichotomous" class="section level1">
-<h1><span class="header-section-number">4</span> classification (dichotomous)</h1>
+<h1><span class="header-section-number">5</span> classification (dichotomous)</h1>
 <p>As we have two outcomes, one dichotomous and one metric, we can both do classification and regression. Let’s look at classification first.</p>
 <p>Before I forget: we need to exclude the metric outcome variable.</p>
 <div id="lm" class="section level2">
-<h2><span class="header-section-number">4.1</span> LM</h2>
+<h2><span class="header-section-number">5.1</span> LM</h2>
 <p>Let’s fit a linear logistic model. The model showed some problems with factor variables that have sparsely populated levels.</p>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
+<pre><code>## Warning: glm.fit: algorithm did not converge</code></pre>
+<pre><code>## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred</code></pre>
 <pre><code>## Confusion Matrix and Statistics
 ## 
 ##           Reference
@@ -232,7 +314,10 @@ $(document).ready(function () {
 ##                                           
 ##        'Positive' Class : 1               
 ## </code></pre>
-<p>Classification rate was …ok…? But now look at the variable importance. Note: &gt;Linear Models: the absolute value of the t–statistic for each model parameter is used.</p>
+<p>Classification rate was …bad…? But now look at the variable importance. Note:</p>
+<blockquote>
+<p>Linear Models: the absolute value of the t–statistic for each model parameter is used.</p>
+</blockquote>
 <p>(From caret help <code>varimp</code>.)</p>
 <table>
 <thead>
@@ -262,84 +347,13 @@ $(document).ready(function () {
 <td align="left">SCAS_S_C_sum_PRE</td>
 <td align="right">0.0007192</td>
 </tr>
-<tr class="even">
-<td align="left">ChOCI_R_P_sumimp_PRE</td>
-<td align="right">0.0005773</td>
-</tr>
-<tr class="odd">
-<td align="left">ChOCI_R_C_sumsym_PRE</td>
-<td align="right">0.0005691</td>
-</tr>
-<tr class="even">
-<td align="left"><code>contactSelf-referral</code></td>
-<td align="right">0.0003990</td>
-</tr>
-<tr class="odd">
-<td align="left">CDI_S_sum_PRE</td>
-<td align="right">0.0003948</td>
-</tr>
-<tr class="even">
-<td align="left">ADHD</td>
-<td align="right">0.0003576</td>
-</tr>
-<tr class="odd">
-<td align="left">EWSASC_sum_PRE</td>
-<td align="right">0.0003352</td>
-</tr>
-<tr class="even">
-<td align="left">SCAS_S_P_sum_PRE</td>
-<td align="right">0.0003242</td>
-</tr>
-<tr class="odd">
-<td align="left">PanicDisorder</td>
-<td align="right">0.0002796</td>
-</tr>
-<tr class="even">
-<td align="left">SocialPhob</td>
-<td align="right">0.0002715</td>
-</tr>
-<tr class="odd">
-<td align="left">medication_yesno</td>
-<td align="right">0.0002704</td>
-</tr>
-<tr class="even">
-<td align="left">sexgirl</td>
-<td align="right">0.0002502</td>
-</tr>
-<tr class="odd">
-<td align="left">Depression</td>
-<td align="right">0.0002293</td>
-</tr>
-<tr class="even">
-<td align="left">FAS_PR_sum_PRE</td>
-<td align="right">0.0001456</td>
-</tr>
-<tr class="odd">
-<td align="left">distance</td>
-<td align="right">0.0000890</td>
-</tr>
-<tr class="even">
-<td align="left">TourettesTics</td>
-<td align="right">0.0000856</td>
-</tr>
-<tr class="odd">
-<td align="left">ChOCI_R_P_sumsym_PRE</td>
-<td align="right">0.0000852</td>
-</tr>
-<tr class="even">
-<td align="left">SpecificPhob</td>
-<td align="right">0.0000758</td>
-</tr>
-<tr class="odd">
-<td align="left">CYBOCS_pre_sum</td>
-<td align="right">0.0000730</td>
-</tr>
-<tr class="even">
-<td align="left">GAD</td>
-<td align="right">0.0000483</td>
-</tr>
 </tbody>
 </table>
+<p>Only top-5 shown.</p>
+<p>Although not undebated among statisticians, let’s try a stepwise regression.</p>
+</div>
+<div id="stepwise-lm" class="section level2">
+<h2><span class="header-section-number">5.2</span> Stepwise LM</h2>
 </div>
 </div>
 

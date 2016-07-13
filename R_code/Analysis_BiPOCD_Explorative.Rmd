@@ -79,7 +79,7 @@ data_sumscores$CYBOCS_3m <- data$CYBOCS_3m
 
 data %>%
   nearZeroVar(., saveMetrics = TRUE) %>%
-  rownames_to_column() %>%
+  tibble::rownames_to_column() %>%
   filter(nzv == TRUE) -> data_nzv
 
 nzv_vars <- data_nzv$rowname
