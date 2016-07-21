@@ -16,23 +16,25 @@ library(knitr) # rmarkdown
 library(tidyr) # tibbling objects
 library(caret) # modeling
 library(ggplot2) # plotting
-#library(tibble) # tibble
+library(tibble) # tibble
 library(dplyr) # data wrangling
 
 
-# variables
+# results/ variables
 mod_results <- list()
-
 
 
 # overhead
 write_to_file <- FALSE
+recompute <- FALSE
 ```
 
 
 
 ```{r read_data}
-read_csv("data_class.csv")
+data_class <- read_csv("data_class.csv")
+data_class$responder_3m_f <- factor(data_class$responder_3m_f)
+getwd()
 ```
 
 
@@ -84,7 +86,10 @@ trainIndex <- createDataPartition(data_class$responder_3m_f, p = .8,
 train <- data_class[trainIndex, ]
 test <- data_class[-trainIndex, ]
 
-
+cat("Class of DV:\n")
+str(data_class$responder_3m_f)
+str(train$responder_3m_f)
+str(test$responder_3m_f)
 ```
 
 
@@ -98,14 +103,27 @@ Let's fit a linear logistic model. The model showed some problems with factor va
 
 ```{r glmfit1, warning = FALSE, message = TRUE}
 
-ctrl <- trainControl(method = "repeatedcv", 
-                     repeats = 10,
-                     number = 100)
+do_glmfit1 <- function(){
 
-glmfit1 <- train(responder_3m_f ~ .,
-                 data = train,
-                 method = "glm",
-                 trControl = ctrl)
+  ctrl <- trainControl(method = "repeatedcv", 
+                       repeats = 10,
+                       number = 100)
+  
+  glmfit1 <- train(factor(responder_3m_f) ~ .,
+                   data = train,
+                   method = "glm",
+                   trControl = ctrl)
+  
+  return(glmfit1)
+
+}
+
+glmfit1 <- do_glmfit1()
+
+cat("Class of DV:\n")
+str(data_class$responder_3m_f)
+str(train$responder_3m_f)
+str(test$responder_3m_f)
 
 
 mod_results$glmfit1 <- save_model_results(glmfit1)
@@ -155,18 +173,35 @@ Although not undebated among statisticians, let's try a stepwise regression inst
 
 ## Stepwise LM
 
-```{r glmfit2}
-ctrl <- trainControl(method = "repeatedcv", 
-                     repeats = 3,
-                     number = 50)  # n of iterations for convertion
+```{r function_glmfit2}
 
-glmfit2 <- train(responder_3m_f ~ .,
-                 data = train,
-                 method = "glmStepAIC",
-                 trControl = ctrl)   # takes some minutes! *expensive*
+do_glmfit2 <- function(save_results = FALSE){
+  ctrl <- trainControl(method = "repeatedcv", 
+                       repeats = 3,
+                       number = 50)  # n of iterations for convertion
+  
+  glmfit2 <- train(responder_3m_f ~ .,
+                   data = train,
+                   method = "glmStepAIC",
+                   trControl = ctrl)   # takes some minutes! *expensive*
+  
+  
+  if (save_results == TRUE) save(glmfit2, file = "glmfit2.Rda")
+  
+  return(glmfit2)
+}
 
 
+```
 
+
+```{r glimfit2_results}
+
+if (recompute == TRUE) {
+  glmfit2 <- do_glmfit2()
+}else{
+  load(file = "glmfit2.Rda")
+}
 
 glmfit2_pred <- predict(glmfit2, newdata = test)
 # length(glmfit2_pred)
@@ -178,6 +213,13 @@ mod_results$glmfit2$fit <- glmfit2
 mod_results$glmfit2$name <- "glmfit2"
 #mod_results$glmfit2$varimp <- varImp(glmfit2, scale = FALSE)
 
+
+
+cat("Class of DV:\n")
+str(data_class$responder_3m_f)
+str(train$responder_3m_f)
+str(test$responder_3m_f)
+
 ```
 
 
@@ -185,7 +227,7 @@ Hm, that's not so enlightning. Let's try a different function, `leap::regsubsets
 
 ```{r glmfit3}
 library(leaps)
-glmfit3 <- regsubsets(responder_3m_f ~ . , data = data_mod2,
+glmfit3 <- regsubsets(responder_3m_f ~ . , data = data_class,
                       nvmax = 10, 
                       method = "forward")
 glmfit3_summary <- summary(glmfit3)
@@ -266,10 +308,11 @@ ctrl <- trainControl(method = "repeatedcv",
                      number = 100)
 
 
-train2 <- dplyr::select(train, one_of(best_preds), responder_3m_f)
+train2 <- dplyr::select(train, one_of(best_preds),responder_3m_f)
 test2 <- dplyr::select(train, one_of(best_preds), responder_3m_f)
 
-glmfit4 <- train(responder_3m_f ~ .,
+
+glmfit4 <- train(factor(responder_3m_f) ~ .,
                  data = train2,
                  method = "glm",
                  trControl = ctrl)
@@ -287,18 +330,26 @@ kable(dummy)
 
 mod_results$glmfit4 <- save_model_results(glmfit4)
 
-names(mod_results$glmfit4)
-glm4_pred <- predict(glmfit4, test2)
-
-
 
 
 ```
 
 
-Accuracy as measured by Cohen's Kappa in **train** set is `r mod_results$glmfit4$fit$results$Accuracy`.
+Accuracy as measured by Cohen's Kappa in **train** set is
 
-However, the accuracy in **test** set is `r mod_results$glmfit4$confusion_matrix`.
+```{r}
+mod_results$glmfit4$fit$results$Accuracy
+```
+
+
+
+However, the accuracy in **test** set is 
+```{r}
+
+mod_results$glmfit4$confusion_matrix
+
+```
+
 
 Not too exciting.
 
