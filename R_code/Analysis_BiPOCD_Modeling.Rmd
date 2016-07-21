@@ -15,6 +15,7 @@ output:
 knitr::opts_chunk$set(echo = FALSE, cache = TRUE, warning = FALSE, message = FALSE)
 
 
+library(readr)
 library(knitr)
 library(readr)
 library(tidyr)
@@ -32,58 +33,11 @@ path_code <- "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/R_code"
 path_figs <- "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/figs"
 path_obj <- "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/data_objects"
 
-# load data
-data <- read_csv(path_file_data)
 
 
 # constants
 red1 <- "#880011"
 
-
-# some important sub data sets
-
-
-data %>% 
-  mutate(responder_3m_f = factor(responder_3m)) -> data
-
-data$responder_3m_f <- relevel(data$responder_3m_f, ref = "1")
-
-
-data_sumscores$responder_3m_f <- data$responder_3m_f
-data_sumscores$CYBOCS_3m <- data$CYBOCS_3m
-
-
-
-data %>%
-  nearZeroVar(., saveMetrics = TRUE) %>%
-  rownames_to_column() %>%
-  filter(nzv == TRUE) -> data_nzv
-
-nzv_vars <- data_nzv$rowname
-
-
-# data %>%
-#   select(Depression:GAD, responder_3m, responder_3m_f) %>%
-#   select(-one_of(nzv_vars)) %>%
-#   na.omit -> data_comorb
-
-
-
-
-# data_short -- variables used for modeling
-
-
-data %>%
-  caret::nearZeroVar(., saveMetrics = TRUE) %>%
-  tibble::rownames_to_column() %>%
-  filter(nzv == TRUE) -> data_nzv
-
-nzv_vars <- data_nzv$rowname
-
-
-
-
-# write_csv(data_mod, path = "data_mod.csv")
 
 
 
@@ -117,22 +71,19 @@ Exclude:
 (Plus ID variable for joins etc.)
 
 ```{r data_mod}
-data %>% 
-  dplyr::select(dplyr::matches("sum|CYBOCS"),  # sumscores of scales OR CYBOCS
-         Depression:numberdiagnos,  # comorbidity
-         sex:OCD_treatm_exp,  # demographics
-         responder_3m_f, CYBOCS_3m,  # outcome
-         CGI_S_pre,  # clincial rating of symptoms
-         checking, obsessions, contamination, symmetry, # symptoms
-         ID, 
-         -one_of(nzv_vars)) ->  # exclude nzv variables
-  data_mod
+
+
+data_mod <- prep_data(data_file = path_file_data)
+
+
 ```
 
 
 
 # Replace/omit missing values
 
+
+## Missings in the DV(s)
 
 How many missings do we have?
 
@@ -146,7 +97,7 @@ data_mod %>%
   kable
 ```
 
-Oh no! Some NA's in our outcome variable, that's is a sad story. That reduces the sample size. Ok, then be hard now. At least the 5 missings occur in both variables for the same cases. Good bye, guys.
+Oh no! Some NA's in our outcome variable, that's is a sad story. That reduces the sample size. We could impute, but let's forget that for now. Ok, then be hard better now than later. At least the 5 missings occur in both variables for the same cases. Good bye, guys.
 
 ```{r}
 data_mod %>% 
@@ -155,6 +106,7 @@ data_mod %>%
 
 The dimension of our data set is now `r dim(data_mod)`.
 
+## NAs in predictors
 
 What about the rest of the variables with NAs? They do have quite a number of NAs, and the variables do not appear so important. So let's omit these variables.
 
@@ -164,6 +116,17 @@ data_mod %>%
 ```
 
 Now the dimension of our data set is: `r dim(data_mod)`.
+
+
+Any missings left?
+
+```{r}
+data_mod %>% 
+  select_if(function(x) any(is.na(x))) %>% 
+  summarise_each(funs(sum(is.na(.)))) %>% 
+  kable
+```
+
 
 
 # Separate train and test dataset
@@ -204,7 +167,8 @@ sparse_vars <- c("medication", "Education_parent", "OCD_treatm_exp", "Birthcount
 data_mod %>% 
   dplyr::select(-one_of(sparse_vars)) -> data_mod
 
-
+setwd(path_data)
+write_csv(data_mod, path = "data_mod.csv")
 ```
 
 The factor variables with sparse levels (now excluded) are: `r sparse_vars`.
@@ -222,6 +186,10 @@ Before I forget: we need to exclude the metric outcome variable.
 ```{r}
 data_mod %>% 
   dplyr::select(-CYBOCS_3m) -> data_class  # note the new name!
+
+setwd(path_data)
+write_csv(data_class, path = "data_class.csv")
+
 
 set.seed(42)
 trainIndex <- createDataPartition(data_class$responder_3m_f, p = .7,
@@ -296,7 +264,7 @@ glmfit1 <- glm(responder_3m_f ~ .,
 pR2(glmfit1)
 ```
 
-Here, the algorithm tells us that we ran into problems; it may well be that we have too many predictors. MacFadden's R^2 is 1; appears to good to be true.
+Here, the algorithm tells us that we ran into problems; it may well be that we have too many predictors. MacFadden's R^2 is 1; appears too good to be true.
 
 
 
