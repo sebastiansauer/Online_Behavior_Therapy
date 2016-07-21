@@ -7,3 +7,8 @@ ggplot2
 caret
 tibble
 dplyr
+MASS
+pscl
+magrittr
+Rcpp
+mice

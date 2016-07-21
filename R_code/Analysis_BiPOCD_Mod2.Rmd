@@ -1,15 +1,9 @@
 ---
-title: "BiPOCD_modeling"
+title: "BiPOCD_Modeling_2"
 author: "Sebastian Sauer"
-date: "11 Juli 2016"
-output:
-  html_document:
-    toc: yes
-    toc_depth: 3
-    number_sections: true
+date: "21 Juli 2016"
+output: html_document
 ---
-
-
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, cache = TRUE, warning = FALSE, message = FALSE)
@@ -26,277 +20,50 @@ library(ggplot2) # plotting
 library(dplyr) # data wrangling
 
 
+# variables
+mod_results <- list()
 
-# define paths
-path_data <- "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/raw_data"
-path_file_data <- "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/raw_data/BiPOCD_raw_data.csv"
-path_code <- "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/R_code"
-path_figs <- "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/figs"
-path_obj <- "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/data_objects"
-
-
-
-# constants
-red1 <- "#880011"
-
-
-
-
-# list with modeling results
-
-#mod_results <- vector(mode = "list", length = 10)
-
-
-# source functions
-#setwd(path_code)
-#source("prep_data.R")
-#source("save_model_results.R")
 
 
 # overhead
 write_to_file <- FALSE
+```
 
+
+
+```{r read_data}
+read_csv("data_class.csv")
 ```
 
 
 
 
+```{r function_write_model_results}
 
-# Variables for modeling
+save_model_results <- function(obj,
+                               predict_results = TRUE,
+                               report_varimp = TRUE){
 
-What variables should be included, and which not?
+  results <- list()
 
-Include:
-
-- sum scores
-- demographics
-- outcome
-- CYBOCS (all)
-- CGI_S_pre
-- symptoms: Checking, Obsessions, contamination und symmetry
-
-Exclude:
-
-- nzv variables (near zero variance)
-- single items, if collapsed in sum score
+  results$fit <- obj
+  results$name <- deparse(substitute(obj))
 
 
-(Plus ID variable for joins etc.)
+  if (predict_results == TRUE){
+    fit_pred <- predict(obj, test)
+    results$prediction_results <- fit_pred
+    results$confusion_matrix <- confusionMatrix(data = fit_pred, test$responder_3m_f)
+  }
 
-```{r function_prep_data}
+  if (report_varimp == TRUE){
+    results$varimp <- varImp(obj, scale = FALSE)
+  }
 
-prep_data <- function(data_file = path_file_data, learning_type = "classification", write = FALSE) {
-
-  require(readr)
-  require(dplyr)
-
-
-  # define paths
-  path_data <- "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/raw_data"
-  path_file_data <- "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/raw_data/BiPOCD_raw_data.csv"
-
-
-
-  # load data
-  data <- read_csv(data_file)
-
-  # convert outcome to factor and relevel
-  data %>%
-    mutate(responder_3m_f = factor(responder_3m)) -> data
-
-  cat("TEST_factorized!")
-
-
-  data$responder_3m_f <- relevel(data$responder_3m_f, ref = "1")
-
-  # identify NZV variables
-  data %>%
-    caret::nearZeroVar(., saveMetrics = TRUE) %>%
-    tibble::rownames_to_column() %>%
-    filter(nzv == TRUE) -> data_nzv
-
-  nzv_vars <- data_nzv$rowname
-
-
-  data %>%
-    dplyr::select(dplyr::matches("sum|CYBOCS"),  # sumscores of scales OR CYBOCS
-                  Depression:numberdiagnos,  # comorbidity
-                  sex:OCD_treatm_exp,  # demographics
-                  responder_3m_f, CYBOCS_3m,  # outcome
-                  CGI_S_pre,  # clincial rating of symptoms
-                  checking, obsessions, contamination, symmetry, # symptoms
-                  ID,
-                  -one_of(nzv_vars)) ->  # exclude nzv variables
-    data_mod
-
-  if (write == TRUE) write_csv(data_mod, path = "data_mod.csv")
-
-  return(data_mod)
-
+  return(results)
 }
 
-data_mod <- prep_data("BiPOCD_raw_data.csv")
-
-
 ```
-
-
-
-# Replace/omit missing values
-
-
-## Missings in the DV(s)
-
-How many missings do we have?
-
-```{r}
-data_mod %>% select_if(function(col) sum(is.na(col)) != 0) %>% names
-
-
-data_mod %>% 
-  select_if(function(col) sum(is.na(col)) != 0) %>% 
-  summarise_each(funs(sum(is.na(.)))) %>% 
-  kable
-```
-
-Oh no! Some NA's in our outcome variable, that's is a sad story. That reduces the sample size. We could impute, but let's forget that for now. Ok, then be hard better now than later. At least the 5 missings occur in both variables for the same cases. Good bye, guys.
-
-```{r}
-data_mod %>% 
-  filter(!is.na(responder_3m_f), !is.na(CYBOCS_3m)) -> data_mod
-```
-
-The dimension of our data set is now `r dim(data_mod)`.
-
-## NAs in predictors
-
-What about the rest of the variables with NAs? 
-
-There are some variables with a lot of NA. Cure appears difficult. Better omit these variables. Here come the culprits:
-
-```{r, echo = TRUE}
-data_mod %>% 
-  dplyr::select_if(function(col) sum(is.na(col)) >= 10) %>% names
-```
-
-Adios, guys:
-
-```{r}
-data_mod %>% 
-  dplyr::select_if(function(col) sum(is.na(col)) < 10) -> data_mod
-```
-
-Now the dimension of our data set is: `r dim(data_mod)`.
-
-
-Any missings left?
-
-```{r}
-data_mod %>% 
-  select_if(function(x) any(is.na(x))) %>% 
-  summarise_each(funs(sum(is.na(.)))) %>% 
-  kable
-```
-
-Yes, some. Let's impute them.
-
-
-## Impute missing values
-
-Imputing missing values is a science (and art) in its own right... But let's do some quick imputing.
-
-```{r}
-md.pattern(data_mod)
-
-data_mod2 <- data_mod
-
-## data_mod_imp <- mice(data_mod)
-# data_mod2 <- complete(data_mod_imp, 1)
-setwd(path_data)
-# write_csv(data_mod2, path = "data_mod2.csv")
-# data_mod2 <- read_csv("data_mod2.csv")
-```
-
-We have taken imputed dataset #1 (out of 5, as per default) for imputation.
-
-Now we feel so whole! :-)
-
-Final check for missings:
-```{r}
-data_mod2 %>% 
-  select_if(function(col) any(is.na(col)))
-```
-
-None.
-
-
-## Collinearity
-
-Let's check again for highly correlated variables. I have been informed that there might be again an issue..
-
-```{r}
-
-data_mod2 %>% 
-  select_if(is.numeric) %>% 
-  cor %>% findCorrelation(names = TRUE) -> collinear_vars
-
-```
-So this variable `r collinear_vars` is collinear to some other. Let's exclude it.
-
-```{r}
-
-data_mod2 %>% 
-  dplyr::select(-one_of(collinear_vars)) -> data_mod2
-```
-
-
-
-# Separate train and test dataset
-
-Let's split the data set in two parts, for training (80%) and for testing, to avoid bias from overfitting.
-
-```{r}
-set.seed(42)
-trainIndex <- createDataPartition(data_mod$responder_3m_f, p = .7,
-                                  list = FALSE,
-                                  times = 1)
-
-train <- data_mod2[trainIndex, ]
-test <- data_mod2[-trainIndex, ]
-```
-
-
-
-# Factor variables with sparsely populated levels -- exclude
-
-Some variables are sparsely populated, e.g.:
-
-```{r}
-data_mod2 %>% 
-  dplyr::select(medication) %>% 
-  group_by(medication) %>% 
-  summarise(n = n()) %>%
-  kable
-```
-
-
-Some probems occured with the sparse levels. Better exclude it.
-
-```{r}
-
-sparse_vars <- c("medication", "Education_parent", "OCD_treatm_exp", "Birthcountry", "treatm_exp")
-
-# sparse_vars %in% names(data_mod2)
-
-data_mod2 %>% 
-  dplyr::select(-one_of(sparse_vars)) -> data_mod2
-
-setwd(path_data)
-if (write_to_file == TRUE) write_csv(data_mod2, path = "data_mod2.csv")
-```
-
-The factor variables with sparse levels (now excluded) are: `r sparse_vars`.
-
 
 
 
@@ -307,14 +74,7 @@ As we have two outcomes, one dichotomous and one metric, we can both do classifi
 
 Before I forget: we need to exclude the metric outcome variable `CYBOCS_3m`.
 
-```{r data_class}
-data_mod2 %>% 
-  dplyr::select(-CYBOCS_3m) -> data_class  # note the new name of the dataframe!
-
-#setwd(path_data)
-#setwd(path_code)
-if (write_to_file) write_csv(data_class, path = "data_class.csv")
-
+```{r data_class_train_test}
 
 set.seed(42)
 trainIndex <- createDataPartition(data_class$responder_3m_f, p = .8,
@@ -326,6 +86,7 @@ test <- data_class[-trainIndex, ]
 
 
 ```
+
 
 
 ## LM
