@@ -135,17 +135,26 @@ $(document).ready(function () {
 
 </div>
 
+<div id="TOC">
+<ul>
+<li><a href="#modeling-bipocd"><span class="toc-section-number">1</span> Modeling BiPOCD</a></li>
+<li><a href="#classification-dichotomous"><span class="toc-section-number">2</span> classification (dichotomous)</a><ul>
+<li><a href="#lm"><span class="toc-section-number">2.1</span> LM</a></li>
+<li><a href="#stepwise-lm"><span class="toc-section-number">2.2</span> Stepwise LM</a></li>
+</ul></li>
+<li><a href="#lm-with-reduced-number-of-predictors"><span class="toc-section-number">3</span> LM with reduced number of predictors</a></li>
+</ul>
+</div>
 
 <div id="modeling-bipocd" class="section level1">
-<h1>Modeling BiPOCD</h1>
+<h1><span class="header-section-number">1</span> Modeling BiPOCD</h1>
 <p>Project directory should be “/analysis”; project directory is:</p>
 <pre><code>## [1] &quot;/Users/sebastiansauer/Documents/OneDrive/Forschung/Online_Behavior_Therapy/analysis&quot;</code></pre>
 </div>
 <div id="classification-dichotomous" class="section level1">
-<h1>classification (dichotomous)</h1>
+<h1><span class="header-section-number">2</span> classification (dichotomous)</h1>
 <p>As we have two outcomes, one dichotomous and one metric, we can both do classification and regression. Let’s look at classification first.</p>
 <p>Before I forget: we need to exclude the metric outcome variable <code>CYBOCS_3m</code>.</p>
-<pre><code>## CYBOCS_3m has been excluded from the data set</code></pre>
 <p>Numer of columns in <code>data_class</code>: 34.</p>
 <pre><code>## Class of DV:
 ##  Factor w/ 2 levels &quot;0&quot;,&quot;1&quot;: 1 2 2 2 2 2 1 1 2 1 ...
@@ -157,7 +166,7 @@ $(document).ready(function () {
 ## CYBOCS_3m is NOT in test sample
 ## done</code></pre>
 <div id="lm" class="section level2">
-<h2>LM</h2>
+<h2><span class="header-section-number">2.1</span> LM</h2>
 <p>Let’s fit a linear logistic model. The model showed some problems with factor variables that have sparsely populated levels. Additionally, the ratio of variables to observations is not really nice. We probably will not arrive anywhere with this model.</p>
 <pre><code>## 
 ## Call:
@@ -287,7 +296,7 @@ $(document).ready(function () {
 <p>Although not undebated among statisticians, let’s try a stepwise regression instead (Gelman detests it, but Hastie/Tibshirani seem to be ok with it)</p>
 </div>
 <div id="stepwise-lm" class="section level2">
-<h2>Stepwise LM</h2>
+<h2><span class="header-section-number">2.2</span> Stepwise LM</h2>
 <pre><code>## Confusion Matrix and Statistics
 ## 
 ##           Reference
@@ -511,7 +520,7 @@ $(document).ready(function () {
 </div>
 </div>
 <div id="lm-with-reduced-number-of-predictors" class="section level1">
-<h1>LM with reduced number of predictors</h1>
+<h1><span class="header-section-number">3</span> LM with reduced number of predictors</h1>
 <p>Ok, now again a linear (logistic) model with the reduced number of predictors. Remember that we work with a train and test sample all the time.</p>
 <pre><code>## 
 ## Call:

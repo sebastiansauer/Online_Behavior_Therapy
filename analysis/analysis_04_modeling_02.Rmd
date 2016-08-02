@@ -1,0 +1,147 @@
+---
+title: "modeling2"
+author: "Sebastian Sauer"
+date: "1 August 2016"
+output: 
+  html_document:
+    code_folding: hide
+     toc: yes
+     toc_depth: 3
+     number_sections: true
+---
+
+
+```{r setup, include=FALSE}
+
+cat("***starting\n***")
+
+knitr::opts_chunk$set(echo = FALSE, 
+                      cache = TRUE, 
+                      warning = FALSE, 
+                      message = FALSE)
+
+
+library(pscl)  # pseudo R^2
+library(magrittr) # piping
+library(mice)  # imputation
+library(testthat)
+library(readr) # csv import
+library(knitr) # rmarkdown
+library(tidyr) # tibbling objects
+library(caret) # modeling
+library(ggplot2) # plotting
+library(tibble) # tibble
+library(dplyr) # data wrangling
+
+
+# results/ variables
+mod_results <- list()
+
+
+# overhead
+write_to_file <- FALSE
+recompute <- FALSE
+test_it <- FALSE
+```
+
+
+
+
+
+```{r read_data}
+data_class <- read_csv("../raw_data/data_class.csv")
+data_class$responder_3m_f <- factor(data_class$responder_3m_f)
+
+expect_s3_class(data_class$responder_3m_f, "factor")
+
+data_class <- data_class %>% select(-ID)
+
+
+load(file = "mod_results.Rda")
+
+```
+
+
+Project directory should be "./analysis"; project directory is:
+```{r}
+getwd()
+```
+
+
+``` {r child = 'save_results.Rmd'}
+```
+
+
+# Classification with flexible models
+
+
+Before I forget: we need to exclude the metric outcome variable `CYBOCS_3m`.
+
+```{r child = "exclude_CYBOCS_3M.Rmd"}
+```
+
+Now, let's split up the data in a test sample and a training sample.
+
+
+```{r child = "test_split_data.Rmd"}
+```
+
+
+```{r}
+set.seed(42)
+trainIndex <- createDataPartition(data_class$responder_3m_f, p = .8,
+                                  list = FALSE,
+                                  times = 1)
+
+train_sample <- data_class[trainIndex, ]
+test_sample <- data_class[-trainIndex, ]
+
+if (test_it ==  TRUE) test_split_data()
+
+
+predictor_names <- names(train_sample)[names(train_sample) != "responder_3m_f"]
+outcome_name <- "responder_3m_f"
+
+```
+
+
+
+## Lasso
+
+A "Lasso" is linear model where model coefficients are penalized in order to shrunk them. That's a way to keep a model simple (few predictors). The lasso is one model with often performs well at the same time keeping the advantages of typical linear model. 
+
+
+```{r lasso}
+
+
+# start easy
+
+data_df <- train_sample
+
+do_lasso <- function(data_df = data_class){
+
+  ctrl <- trainControl(method = "repeatedcv", 
+                       repeats = 5,
+                       number = 10,
+                       verboseIter =TRUE)
+  
+ 
+  
+  
+  lasso <- train(data_df[, predictor_names],  
+                 data_df[, outcome_name],
+                 method = "glmnet",
+                 trControl = ctrl)
+  
+  return(lasso)
+
+}
+
+lasso <- do_lasso(train_sample)
+summary(lasso)
+print(lasso)
+confusionMatrix(lasso)
+
+mod_results$lasso <- save_model_results(lasso)
+```
+

@@ -1,0 +1,319 @@
+---
+title: "BiPOCD_preparation_for_modeling"
+author: "Sebastian Sauer"
+date: "11 Juli 2016"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    number_sections: true
+    code_foling: hide
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, cache = TRUE, warning = FALSE, message = FALSE)
+
+library(pscl)  # pseudo R^2
+library(magrittr) # piping
+library(mice)  # imputation
+library(readr) # csv import
+library(knitr) # rmarkdown
+library(tidyr) # tibbling objects
+library(caret) # modeling
+library(ggplot2) # plotting
+#library(tibble) # tibble
+library(dplyr) # data wrangling
+
+
+
+# define paths
+path_data <- "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/raw_data"
+path_file_data <- "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/raw_data/BiPOCD_raw_data.csv"
+path_code <- "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/R_code"
+path_figs <- "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/figs"
+path_obj <- "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/data_objects"
+
+
+
+# constants
+red1 <- "#880011"
+
+
+
+
+# overhead
+write_to_file <- TRUE
+
+```
+
+
+
+
+
+# Variables for modeling
+
+What variables should be included, and which not?
+
+Include:
+
+- sum scores
+- demographics
+- outcome
+- CYBOCS (all)
+- CGI_S_pre
+- symptoms: Checking, Obsessions, contamination und symmetry
+
+Exclude:
+
+- nzv variables (near zero variance)
+- single items, if collapsed in sum score
+
+
+(Plus ID variable for joins etc.)
+
+```{r function_prep_data}
+
+prep_data <- function(data_file = path_file_data, learning_type = "classification", write = FALSE) {
+
+  require(readr)
+  require(dplyr)
+
+
+  # define paths
+  path_data <- "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/raw_data"
+  path_file_data <- "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/raw_data/BiPOCD_raw_data.csv"
+  data_file <- "BiPOCD_raw_data.csv"
+
+
+
+  # load data
+  data <- read_csv(paste("../raw_data/", data_file, sep = ""))
+
+  # convert outcome to factor and relevel
+  data %>%
+    mutate(responder_3m_f = factor(responder_3m)) -> data
+
+  library(testthat)
+  expect_s3_class(data$responder_3m_f, "factor")
+
+  message("dichotomy outcome variable has been converted to factor")
+
+
+  data$responder_3m_f <- relevel(data$responder_3m_f, ref = "1")
+
+  # identify NZV variables
+  data %>%
+    caret::nearZeroVar(., saveMetrics = TRUE) %>%
+    tibble::rownames_to_column() %>%
+    filter(nzv == TRUE) -> data_nzv
+  
+  message("near zero variance variables have been identified")
+
+  nzv_vars <- data_nzv$rowname
+
+
+  data %>%
+    dplyr::select(dplyr::matches("sum|CYBOCS"),  # sumscores of scales *OR* CYBOCS
+                  Depression:numberdiagnos,  # comorbidity
+                  sex:OCD_treatm_exp,  # demographics
+                  responder_3m_f, CYBOCS_3m,  # outcome
+                  CGI_S_pre,  # clincial rating of symptoms
+                  checking, obsessions, contamination, symmetry, # symptoms
+                  ID,
+                  -one_of(nzv_vars)) ->  # exclude nzv variables
+    data_mod
+
+  if (write == TRUE) write_csv(data_mod, path = "data_mod.csv")
+
+  return(data_mod)
+
+}
+
+data_mod <- prep_data("BiPOCD_raw_data.csv")
+
+
+```
+
+
+Where are we?
+```{r}
+getwd()
+```
+
+
+
+# Replace/omit missing values
+
+
+## Missings in the DV(s)
+
+How many missings do we have?
+
+```{r}
+data_mod %>% select_if(function(col) sum(is.na(col)) != 0) %>% names
+
+
+data_mod %>% 
+  select_if(function(col) sum(is.na(col)) != 0) %>% 
+  summarise_each(funs(sum(is.na(.)))) %>% 
+  kable
+```
+
+Oh no! Some NA's in our outcome variable, that's is a sad story. That reduces the sample size. We could impute, but let's forget that for now. Ok, then be hard better now than later. At least the 5 missings occur in both variables for the same cases. Good bye, guys.
+
+```{r}
+data_mod %>% 
+  filter(!is.na(responder_3m_f), !is.na(CYBOCS_3m)) -> data_mod
+```
+
+The dimension of our data set is now `r dim(data_mod)`.
+
+## NAs in predictors
+
+What about the rest of the variables with NAs? 
+
+There are some variables with a lot of NA. Cure appears difficult. Better omit these variables. Here come the culprits:
+
+```{r, echo = TRUE}
+data_mod %>% 
+  dplyr::select_if(function(col) sum(is.na(col)) >= 10) %>% names
+```
+
+Adios, guys:
+
+```{r}
+data_mod %>% 
+  dplyr::select_if(function(col) sum(is.na(col)) < 10) -> data_mod
+```
+
+Now the dimension of our data set is: `r dim(data_mod)`.
+
+
+Any missings left?
+
+```{r}
+data_mod %>% 
+  select_if(function(x) any(is.na(x))) %>% 
+  summarise_each(funs(sum(is.na(.)))) %>% 
+  kable
+```
+
+Yes, some. Let's impute them.
+
+
+## Impute missing values
+
+Imputing missing values is a science (and art) in its own right... But let's do some quick imputing.
+
+```{r}
+md.pattern(data_mod)
+
+#data_mod2 <- data_mod
+
+data_mod_MI <- mice(data_mod)
+data_mod_imp <- mice::complete(data_mod_MI, 1)
+# setwd(path_data)
+if (write_to_file == TRUE) write_csv(data_mod_imp, path = "data_mod2.csv")
+# data_mod2 <- read_csv("data_mod2.csv")
+data_mod2 <- data_mod_imp
+
+```
+
+We have taken imputed dataset #1 (out of 5, as per default) for imputation.
+
+Now we feel so whole! :-)
+
+Final check for missings: Here are the columns with NAs:
+```{r}
+data_mod2 %>% 
+  select_if(function(col) any(is.na(col))) %>% names
+```
+
+
+
+
+## Collinearity
+
+Let's check again for highly correlated variables. I have been informed that there might be again an issue..
+
+```{r}
+
+data_mod2 %>% 
+  select_if(is.numeric) %>% 
+  cor %>% findCorrelation(names = TRUE) -> collinear_vars
+
+```
+So this variable `r collinear_vars` is collinear to some other. Let's exclude it.
+
+```{r}
+
+data_mod2 %>% 
+  dplyr::select(-one_of(collinear_vars)) -> data_mod2
+```
+
+
+
+# Separate train and test dataset
+
+Let's split the data set in two parts, for training (80%) and for testing, to avoid bias from overfitting.
+
+```{r}
+set.seed(42)
+trainIndex <- createDataPartition(data_mod$responder_3m_f, p = .7,
+                                  list = FALSE,
+                                  times = 1)
+
+train <- data_mod2[trainIndex, ]
+test <- data_mod2[-trainIndex, ]
+```
+
+
+
+# Factor variables with sparsely populated levels -- exclude
+
+Some variables are sparsely populated, e.g.:
+
+```{r}
+data_mod2 %>% 
+  dplyr::select(medication) %>% 
+  group_by(medication) %>% 
+  summarise(n = n()) %>%
+  kable
+```
+
+
+Some probems occured with the sparse levels. Better exclude it.
+
+```{r exclude_sparse_variables}
+
+sparse_vars <- c("medication", "Education_parent", "OCD_treatm_exp", "Birthcountry", "treatm_exp")
+
+# sparse_vars %in% names(data_mod2)
+
+data_mod2 %>% 
+  dplyr::select(-one_of(sparse_vars)) -> data_mod2
+
+```
+
+Don't forget to write resulting dataframe to disk.
+
+```{r write_datafile_to_disk}
+
+# setwd(path_data)
+if (write_to_file == TRUE) write_csv(data_mod2, path = "../raw_data/data_mod2.csv")
+
+# data_class <- data_mod2
+
+
+```
+
+The factor variables with sparse levels (now excluded) are: `r sparse_vars`.
+
+```{r}
+cat("This is the end\n")
+```
+
+
+
