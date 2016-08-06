@@ -5,9 +5,9 @@ date: "1 August 2016"
 output: 
   html_document:
     code_folding: hide
-     toc: yes
-     toc_depth: 3
-     number_sections: true
+    toc: yes
+    toc_depth: 3
+    number_sections: true
 ---
 
 
@@ -42,19 +42,34 @@ mod_results <- list()
 write_to_file <- FALSE
 recompute <- FALSE
 test_it <- FALSE
+
+# project wd
+```
+
+
+```{r child = "functions/paths.Rmd"}
+```
+
+
+```{r set_project_wd}
+# define global paths
+setwd(path_analysis)
+
 ```
 
 
 
-
-
 ```{r read_data}
-data_class <- read_csv("../raw_data/data_class.csv")
+data_class <- read_csv("../raw_data/data_mod2.csv")
 data_class$responder_3m_f <- factor(data_class$responder_3m_f)
 
-expect_s3_class(data_class$responder_3m_f, "factor")
 
-data_class <- data_class %>% select(-ID)
+data_class <- data_class %>% select(-ID)  
+
+
+
+data_class %>% 
+  mutate_if(is.character, factor) -> data_class
 
 
 load(file = "mod_results.Rda")
@@ -68,7 +83,7 @@ getwd()
 ```
 
 
-``` {r child = 'save_results.Rmd'}
+``` {r child = 'functions/save_results.Rmd'}
 ```
 
 
@@ -77,13 +92,13 @@ getwd()
 
 Before I forget: we need to exclude the metric outcome variable `CYBOCS_3m`.
 
-```{r child = "exclude_CYBOCS_3M.Rmd"}
+```{r child = "functions/exclude_CYBOCS_3M.Rmd"}
 ```
 
 Now, let's split up the data in a test sample and a training sample.
 
 
-```{r child = "test_split_data.Rmd"}
+```{r child = "functions/test_split_data.Rmd"}
 ```
 
 
@@ -116,30 +131,30 @@ A "Lasso" is linear model where model coefficients are penalized in order to shr
 
 # start easy
 
-data_df <- train_sample
+# data_df <- train_sample
 
 do_lasso <- function(data_df = data_class){
 
-  ctrl <- trainControl(method = "repeatedcv", 
-                       repeats = 5,
-                       number = 10,
-                       verboseIter =TRUE)
-  
- 
   
   
-  lasso <- train(data_df[, predictor_names],  
-                 data_df[, outcome_name],
-                 method = "glmnet",
-                 trControl = ctrl)
+  data.mm <- model.matrix(responder_3m_f ~ ., data = data_df)
   
-  return(lasso)
+  
+  
+  lasso.cv <- glmnet::cv.glmnet(x = data.mm, 
+                        y = data_df$responder_3m_f, 
+                        family = "binomial",
+                        alpha = 1)
+
+ return(lasso)
 
 }
 
+# debug(do_lasso)
 lasso <- do_lasso(train_sample)
 summary(lasso)
 print(lasso)
+plot(lasso)
 confusionMatrix(lasso)
 
 mod_results$lasso <- save_model_results(lasso)

@@ -46,12 +46,14 @@ path_code <- "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/R_code"
 path_figs <- "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/figs"
 path_obj <- "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/data_objects"
 
-# load data
-data <- read_csv(path_file_data)
-
 
 # constants
 red1 <- "#880011"
+
+
+# load data
+data <- read_csv(path_file_data)
+
 
 ```
 
