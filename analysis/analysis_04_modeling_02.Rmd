@@ -1,5 +1,5 @@
 ---
-title: "modeling2"
+title: "modeling2: Flexible models"
 author: "Sebastian Sauer"
 date: "1 August 2016"
 output: 
@@ -126,23 +126,34 @@ outcome_name <- "responder_3m_f"
 A "Lasso" is linear model where model coefficients are penalized in order to shrunk them. That's a way to keep a model simple (few predictors). The lasso is one model with often performs well at the same time keeping the advantages of typical linear model. 
 
 
-```{r lasso}
+```{r lasso, echo = TRUE}
 
 
 # start easy
 
 # data_df <- train_sample
 
-do_lasso <- function(data_df = data_class){
+
+data_mm <- model.matrix(responder_3m_f ~ ., data = data_class)
+
+set.seed(42)
+trainIndex <- createDataPartition(data_class$responder_3m_f, p = .8,
+                                  list = FALSE,
+                                  times = 1)
+
+train_mm <- data_mm[trainIndex, ]
+test_mm <- data_mm[-trainIndex, ]
+train_sample <- data_class[trainIndex, ]
+test_sample <- data_class[-trainIndex, ]
+
+
+
+do_lasso <- function(data_df = data_class, outcome = train_sample$responder_3m_f){
 
   
   
-  data.mm <- model.matrix(responder_3m_f ~ ., data = data_df)
-  
-  
-  
-  lasso.cv <- glmnet::cv.glmnet(x = data.mm, 
-                        y = data_df$responder_3m_f, 
+  lasso.cv <- glmnet::cv.glmnet(x = data_df, 
+                        y = outcome, 
                         family = "binomial",
                         alpha = 1)
 
@@ -151,11 +162,29 @@ do_lasso <- function(data_df = data_class){
 }
 
 # debug(do_lasso)
-lasso <- do_lasso(train_sample)
-summary(lasso)
-print(lasso)
-plot(lasso)
-confusionMatrix(lasso)
+#lasso.cv <- do_lasso(data_df = train_mm, outcome = train_sample$responder_3m_f)
+
+
+
+lasso.cv <- glmnet::cv.glmnet(x = train_mm, 
+                        y = train_sample$responder_3m_f, 
+                        family = "binomial",
+                        alpha = 1)
+
+summary(lasso.cv)
+print(lasso.cv)
+plot(lasso.cv)
+coef(lasso.cv, s = "lambda.min")
+lasso.cv$lambda.min
+
+
+lasso_pred <- predict(lasso.cv, test_mm, s = "lambda.min", type = "response")
+lasso_pred
+
+lasso_pred <- predict(lasso.cv, test_mm, s = "lambda.min", type = "response")
+lasso_pred
+
+confusionMatrix(lasso_pred)
 
 mod_results$lasso <- save_model_results(lasso)
 ```
