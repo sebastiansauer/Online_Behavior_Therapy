@@ -20,7 +20,7 @@ knitr::opts_chunk$set(echo = FALSE,
                       warning = FALSE, 
                       message = FALSE)
 
-
+library(doMC)
 library(pscl)  # pseudo R^2
 library(magrittr) # piping
 library(mice)  # imputation
@@ -42,12 +42,17 @@ mod_results <- list()
 write_to_file <- FALSE
 recompute <- FALSE
 test_it <- FALSE
+registerDoMC(cores = 4)
+
 
 # project wd
 ```
 
 
-```{r child = "functions/paths.Rmd"}
+```{r paths}
+# PROJHOME that's the project home folder; same as R Project working dir
+paths_file <- file.path(PROJHOME, "functions", "paths.R")
+source(paths_file)
 ```
 
 
@@ -68,8 +73,13 @@ data_class <- data_class %>% select(-ID)
 
 
 
+# change characters to factors
 data_class %>% 
   mutate_if(is.character, factor) -> data_class
+
+
+# change strange factor levels to well-behaved ones
+data_class$contact <- dplyr::recode_factor(data_class$contact, `Self-referral` = "0", `CAMHS referral` = "1")
 
 
 load(file = "mod_results.Rda")
@@ -87,7 +97,7 @@ getwd()
 ```
 
 
-# Classification with flexible models
+# Upfront work
 
 
 Before I forget: we need to exclude the metric outcome variable `CYBOCS_3m`.
@@ -121,12 +131,16 @@ outcome_name <- "responder_3m_f"
 
 
 
-## Lasso
+# Lasso 80/20
 
 A "Lasso" is linear model where model coefficients are penalized in order to shrunk them. That's a way to keep a model simple (few predictors). The lasso is one model with often performs well at the same time keeping the advantages of typical linear model. 
 
+We also compute a cross validation (with default values, ie. 10 folds). Alpha ist set to 1, to prevent ridge regression (see glmnet help for details).
 
-```{r lasso, echo = TRUE}
+The sample was split in a .8 train sample, and a .2 test sample (hence 80/20).
+
+
+```{r compute_lasso, echo = TRUE}
 
 
 # start easy
@@ -135,6 +149,8 @@ A "Lasso" is linear model where model coefficients are penalized in order to shr
 
 
 data_mm <- model.matrix(responder_3m_f ~ ., data = data_class)
+
+data_mm <- data_mm[, -1]  #exclude intercept as glmnet demeans the data and reports intercept by default: http://stats.stackexchange.com/questions/99546/2-intercept-cooficients-in-glmnet-output
 
 set.seed(42)
 trainIndex <- createDataPartition(data_class$responder_3m_f, p = .8,
@@ -147,45 +163,488 @@ train_sample <- data_class[trainIndex, ]
 test_sample <- data_class[-trainIndex, ]
 
 
+test_y_relevel <- relevel(test_sample$responder_3m_f, ref  = "1")
+train_y_relevel <- relevel(train_sample$responder_3m_f, ref  = "1")
 
-do_lasso <- function(data_df = data_class, outcome = train_sample$responder_3m_f){
 
-  
-  
-  lasso.cv <- glmnet::cv.glmnet(x = data_df, 
-                        y = outcome, 
+
+lasso_cv <- glmnet::cv.glmnet(x = train_mm, 
+                        y = train_y_relevel, 
                         family = "binomial",
                         alpha = 1)
-
- return(lasso)
-
-}
-
-# debug(do_lasso)
-#lasso.cv <- do_lasso(data_df = train_mm, outcome = train_sample$responder_3m_f)
-
-
-
-lasso.cv <- glmnet::cv.glmnet(x = train_mm, 
-                        y = train_sample$responder_3m_f, 
-                        family = "binomial",
-                        alpha = 1)
-
-summary(lasso.cv)
-print(lasso.cv)
-plot(lasso.cv)
-coef(lasso.cv, s = "lambda.min")
-lasso.cv$lambda.min
-
-
-lasso_pred <- predict(lasso.cv, test_mm, s = "lambda.min", type = "response")
-lasso_pred
-
-lasso_pred <- predict(lasso.cv, test_mm, s = "lambda.min", type = "response")
-lasso_pred
-
-confusionMatrix(lasso_pred)
-
-mod_results$lasso <- save_model_results(lasso)
 ```
 
+
+Now, let's check the results.
+
+
+```{r lasso_results}
+summary(lasso_cv)
+print(lasso_cv)
+```
+
+For help on the results, use `?cv.glmnet`.
+
+
+Here, different values for tuning parameter `alpha` are shown (the penalty parameters).
+
+Let's look at how the error rate (binomial) develops as a function of alpha.
+
+```{r plot_lasso_alpha}
+plot(lasso_cv)
+```
+
+Ok, so some small log alpha (close to zero) seem appropriate.
+
+For ths best model, let's look at the shrinked model parameters:
+```{r print_lasso_coef}
+coef(lasso_cv, s = "lambda.min")
+
+```
+
+
+Josh! That's the Null model... No predictor at all was included to the best model. :-/
+
+So, with this alpha-penalty, the model achieved the best prediction: `r lasso_cv$lambda.min`.
+
+Now, let's test the model, ie., look at the prediciont (hold-out/test sample). We check both the predicted class (0 vs. 1), as well as the estimated probability for each class.
+
+```{r predict_lasso}
+lasso_pred <- predict(lasso_cv, test_mm, s = "lambda.min", type = "response")
+lasso_pred
+
+lasso_pred <- predict(lasso_cv, test_mm, s = "lambda.min", type = "class")
+lasso_pred
+```
+
+Put together in a confusion matrix:
+
+```{r lasso_confusion_matrix}
+lasso_conf <- confusionMatrix(lasso_pred, test_y_relevel)
+lasso_conf
+
+#debug(save_model_results)
+mod_results$lasso <- save_model_results(obj = lasso_cv, 
+                                        test_df = test_mm, 
+                                        predict_results = FALSE,
+                                        report_varimp = FALSE,
+                                        fit_pred = lasso_pred,
+                                        conf_matrix = lasso_conf)
+```
+
+
+
+Unfortunately, the restuls tell us that the model did not find anything. None of the predictors was estimated to play any role.
+
+
+## Lasso 60/40
+
+Let's compute the Lasso again but increase the test sample. 20% test sample amounts to 10 observations only. One could speculate that is is too few for numeric stability.
+
+
+
+```{r compute_lasso2}
+
+set.seed(42)
+trainIndex_2 <- createDataPartition(data_class$responder_3m_f, p = .6,
+                                  list = FALSE,
+                                  times = 1)
+# length(trainIndex_2)
+
+train_mm_2 <- data_mm[trainIndex_2, ]
+test_mm_2 <- data_mm[-trainIndex_2, ]
+
+train_sample_2 <- data_class[trainIndex_2, ]
+test_sample_2 <- data_class[-trainIndex_2, ]
+
+
+
+lasso_cv_2 <- glmnet::cv.glmnet(x = train_mm_2, 
+                        y = train_sample_2$responder_3m_f, 
+                        family = "binomial",
+                        alpha = 1)
+# str(lasso_cv_2)
+```
+
+
+Now, let's check the results.
+
+
+```{r lasso_results_2}
+summary(lasso_cv_2)
+print(lasso_cv_2)
+coef(lasso_cv_2, s = "lambda.min")
+```
+
+Hm, it is not better, even slightly worse.
+
+Now, let's check predictive accuracy.
+
+```{r predict_lasso_2}
+lasso_pred_2 <- predict(lasso_cv_2, test_mm_2, s = "lambda.min", type = "response")
+lasso_pred_2
+
+lasso_pred_2 <- predict(lasso_cv_2, test_mm_2, s = "lambda.min", type = "class")
+lasso_pred_2
+```
+
+Put together in a confusion matrix:
+
+```{r lasso_confusion_matrix_2}
+lasso_conf_2 <- confusionMatrix(lasso_pred_2, test_sample_2$responder_3m_f)
+lasso_conf_2
+
+#debug(save_model_results)
+mod_results$lasso_2 <- save_model_results(obj = lasso_cv_2, 
+                                        test_df = test_mm_2, 
+                                        predict_results = FALSE,
+                                        report_varimp = FALSE,
+                                        fit_pred = lasso_pred_2,
+                                        conf_matrix = lasso_conf_2)
+```
+
+
+
+# Random Forest
+Hm, let's look at some completely different model: Random Forests.
+
+We use `mtry` (number of chosen variables) as a tuning parameter. `ntree` was set to 1000 (default is 500).
+
+Assuming 4 cores for computation.
+
+
+## Random Forest 80/20
+Let's split up the sample in 80% training, and 20% testing first, as we did above.
+
+
+```{r compute_random_forest}
+
+
+grid_rf <- expand.grid(.mtry = c(2, 4, 5, 6, 7, 8, 16))
+
+set.seed(42)
+rf1 <- caret::train(responder_3m_f ~ ., 
+                    data = train_sample,
+                    method = "rf",
+                    trControl = trainControl(method = "repeatedcv",
+                                             number = 10,
+                                             repeats = 10),
+                    varImp = TRUE,
+                    allowParallel = TRUE,
+                    metric = "Kappa",
+                    ntree = 1000,
+                    tuneGrid = grid_rf)
+
+```
+
+
+Now, let's check the results.
+
+```{r}
+print(rf1)
+print(rf1$finalModel)
+
+ggplot(rf1)
+```
+
+
+Now let's test the model on the hold-out sample:
+
+```{r rf1_predict}
+rf1_predict <- predict(rf1, test_sample, type = "raw")
+rf1_predict
+
+rf1_conf_m <- confusionMatrix(rf1_predict, test_sample$responder_3m_f)
+rf1_conf_m
+```
+
+
+What about the variable importance:
+
+```{r rf_varimp}
+plot(varImp(rf1))
+plot(varImp(rf1, scale = FALSE))
+```
+
+Note that the varImp values are scaled relatively in the first output; ie., the most important variable has value of 100. In the second output, the mean decrease in predictive accuracy is given, when the variable would be randomly permutated (ie., broken). Note that varImp is based on cross validated training data.
+
+Hm, looks not good. True test values for prediction are: `r test_sample$responder_3m_f`.
+
+However, it was predicted that `r rf1_predict`.
+
+Worse than chance... Can that be? Strange.
+
+```{r save_rf1}
+
+mod_results$rf1 <- save_model_results(obj = rf1, 
+                                        test_df = test_sample, 
+                                        predict_results = FALSE,
+                                        report_varimp = FALSE,
+                                        fit_pred = rf1_predict,
+                                        conf_matrix = rf1_conf_m)
+
+```
+
+
+
+## Random Forest 60/40
+
+
+Now the same with a 60-40 sample split up.
+
+```{r compute_random_forest_2}
+
+
+set.seed(42)
+rf2 <- caret::train(responder_3m_f ~ ., 
+                    data = train_sample_2,
+                    method = "rf",
+                    trControl = trainControl(method = "repeatedcv",
+                                             number = 10,
+                                             repeats = 10),
+                    varImp = TRUE,
+                    allowParallel = TRUE,
+                    metric = "Kappa",
+                    ntree = 1000,
+                    tuneGrid = grid_rf)
+
+```
+
+
+Now, let's check the results.
+
+```{r}
+print(rf2)
+print(rf2$finalModel)
+
+ggplot(rf2)
+```
+
+
+Now let's test the model on the hold-out sample:
+
+```{r rf2_predict}
+rf2_predict <- predict(rf2, test_sample_2, type = "raw")
+rf2_predict
+
+rf2_conf_m <- confusionMatrix(rf2_predict, test_sample_2$responder_3m_f)
+rf2_conf_m
+```
+
+
+Unfortunately, not convincing at all.
+
+
+What about the variable importance:
+
+```{r rf_varimp_2}
+plot(varImp(rf2))
+plot(varImp(rf2, scale = FALSE))
+
+```
+
+
+
+
+```{r save_rf2}
+
+mod_results$rf2 <- save_model_results(obj = rf2, 
+                                        test_df = test_sample_2, 
+                                        predict_results = FALSE,
+                                        report_varimp = FALSE,
+                                        fit_pred = rf2_predict,
+                                        conf_matrix = rf2_conf_m)
+
+```
+
+# Support Vector Machines (SVM)
+SVM are another algorithm, quite different to the previous ones. Let's see what happens.
+
+We use a radial kernel and rely on defaults for the rest.
+
+Again, 10/10 repeated cv. Accuracy metric is again Kappa.
+
+
+## SVM Radial 80/20
+
+
+```{r compute_svm1}
+
+outcome_train <- dplyr::recode(train_sample$responder_3m_f, `0` = "no", `1` = "yes")
+outcome_test <- dplyr::recode(test_sample$responder_3m_f, `0` = "no", `1` = "yes")
+
+
+
+mycontrol <- trainControl(method = "repeatedcv",
+                          number = 10,
+                          repeats = 10,
+                          classProbs = TRUE)
+
+set.seed(42)
+svm1 <- caret::train(x = train_mm,
+                     y = outcome_train,
+                     method = "svmRadial",
+                     trControl = mycontrol,
+                     varImp = TRUE,
+                     allowParallel = TRUE,
+                     tuneLength = 9,
+                     metric = "Kappa",
+                     allowParallel = TRUE,
+                     preProcess = c("center", "scale")
+                   )
+
+```
+
+
+Resulting in:
+
+```{r svm1_results}
+print(svm1)
+print(svm1$finalModel)
+plot(svm1)
+```
+
+Saving, training error was zero...
+
+Predicting test sample:
+
+```{r svm1_predict}
+
+
+svm1_predict <- predict(svm1, test_mm)
+svm1_predict
+```
+
+And truth is `r test_sample$responder_3m_f`.
+
+Confusion matrix:
+
+```{r svm1_conf_matrix}
+svm1_conf_m <- confusionMatrix(svm1_predict, outcome_test)
+svm1_conf_m
+```
+
+
+Not very convincing unfortunately...
+
+Variable Importance: Note that SVM do not have an intrinsic varImp algorithm. Instead, ROC values are used.
+
+```{r svm1_varImp}
+
+svm1_varImp <- caret::varImp(svm1, scale = FALSE)
+plot(svm1_varImp)
+
+```
+
+
+
+
+
+```{r save_svm_1}
+
+mod_results$svm_1 <- save_model_results(obj = svm1, 
+                                        test_df = test_sample, 
+                                        predict_results = FALSE,
+                                        report_varimp = FALSE,
+                                        fit_pred = svm1_predict,
+                                        conf_matrix = svm1_conf_m)
+
+```
+
+## SVM Radial, 60-40
+
+
+
+```{r compute_svm2}
+
+outcome_train_2 <- dplyr::recode(train_sample_2$responder_3m_f, `0` = "no", `1` = "yes")
+outcome_test_2 <- dplyr::recode(test_sample_2$responder_3m_f, `0` = "no", `1` = "yes")
+
+
+
+mycontrol <- trainControl(method = "repeatedcv",
+                          number = 10,
+                          repeats = 10,
+                          classProbs = TRUE)
+
+set.seed(42)
+svm_2 <- caret::train(x = train_mm_2,
+                     y = outcome_train_2,
+                     method = "svmRadial",
+                     trControl = mycontrol,
+                     varImp = TRUE,
+                     allowParallel = TRUE,
+                     tuneLength = 9,
+                     metric = "Kappa",
+                     allowParallel = TRUE,
+                     preProcess = c("center", "scale")
+                   )
+
+```
+
+
+Resulting in:
+
+```{r svm_2_results}
+print(svm_2)
+print(svm_2$finalModel)
+plot(svm_2)
+```
+
+Training error was zero...
+
+Predicting test sample:
+
+```{r svm_2_predict}
+
+
+svm_2_predict <- predict(svm_2, test_mm_2)
+svm_2_predict
+```
+
+And truth is `r test_sample$responder_3m_f`.
+
+Confusion matrix:
+
+```{r svm_2_conf_matrix}
+svm_2_conf_m <- confusionMatrix(svm_2_predict, outcome_test_2)
+svm_2_conf_m
+```
+
+
+Slightly better, but not overwhelming. 
+
+
+VarImp:
+
+
+
+```{r svm_2_varImp}
+
+svm_2_varImp <- caret::varImp(svm_2, scale = FALSE)
+plot(svm_2_varImp)
+```
+
+
+
+
+
+```{r save_svm_2}
+
+mod_results$svm_2 <- save_model_results(obj = svm_2, 
+                                        test_df = test_sample_2, 
+                                        predict_results = FALSE,
+                                        report_varimp = FALSE,
+                                        fit_pred = svm_2_predict,
+                                        conf_matrix = svm_2_conf_m)
+
+```
+
+
+
+
+Don't forget to save results to disk...
+
+```{r}
+save(mod_results, file = "mod_results.Rda")
+```

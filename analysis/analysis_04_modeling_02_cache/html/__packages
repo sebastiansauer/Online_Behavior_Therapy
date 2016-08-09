@@ -13,3 +13,8 @@ ggplot2
 caret
 tibble
 dplyr
+foreach
+iterators
+doMC
+randomForest
+kernlab

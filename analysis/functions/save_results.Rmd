@@ -6,7 +6,9 @@
 save_model_results <- function(obj,
                                test_df = test_sample,
                                predict_results = TRUE,
-                               report_varimp = TRUE){
+                               report_varimp = TRUE,
+                               fit_pred = "none",
+                               conf_matrix = "none"){
 
   results <- list()
 
@@ -15,13 +17,12 @@ save_model_results <- function(obj,
 
 
   if (predict_results == TRUE){
-    cat("predicted values are: \n")
+    message("Computing predictiong. Predicted values are: \n")
     fit_pred <- predict(obj, test_df)
     
     print(fit_pred)
-    results$prediction_results <- fit_pred
     
-    cat("confusion matrix for predicted values and factual values: \n")
+    message("confusion matrix for predicted values and factual values: \n")
     results$confusion_matrix <- confusionMatrix(data = fit_pred, test_df$responder_3m_f)
     print(results$confusion_matrix)
   }
@@ -30,6 +31,26 @@ save_model_results <- function(obj,
     results$varimp <- varImp(obj, scale = FALSE)
     print(results$varimp)
   }
+  
+  if (exists("fit_pred") & (fit_pred != "none")) {
+    message("prediction object saved to results list.")
+    results$prediction_results <- fit_pred
+    
+  } else {
+    message("prediction object not found.")
+  }
+  
+  
+   if (exists("conf_matrix") & (conf_matrix != "none")) {
+    message("confusion matrix object saved to results list.")
+    results$confusion_matrix <- conf_matrix
+    
+  } else {
+    message("prediction object not found.")
+  }
+  
+  
+  cat("\n")
 
   return(results)
 }

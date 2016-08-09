@@ -410,8 +410,7 @@ if (length(signif_preds$predictors) > 0) {
 }
 ```
 
-
-Looks like as if CDI_S_sum_PRE is the most promising of those variables. As far as a linear model can tell, at least. Time to look at different models!
+Time to look at different models!
 
 
 Don't forget to save results to disk...
