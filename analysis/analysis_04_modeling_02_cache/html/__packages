@@ -18,3 +18,5 @@ iterators
 doMC
 randomForest
 kernlab
+purrr
+corrr

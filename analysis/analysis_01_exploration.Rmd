@@ -1,7 +1,7 @@
 ---
-title: "Analysis of BiPOCD data"
+title: "Exploration of BiPOCD data"
 author: "Sebastian Sauer"
-date: "4 Juli 2016"
+date: "15 Aug 16"
 output:
   html_document:
     toc: yes
@@ -12,6 +12,7 @@ output:
 ```{r setup, include=FALSE}
 
 
+library(corrr)
 library(corrplot)
 library(mosaic)
 library(readr)
@@ -977,4 +978,16 @@ kable
 
 
 
+
+### Correlation of numeric predicdors with outcome variable `CYBOCS_3m`
+
+```{r}
+data %>% 
+  select_if(is.numeric) %>% 
+  select(-one_of(nzv_vars)) %>% 
+  na.omit %>% 
+  correlate %>% 
+  focus(CYBOCS_3m)
+  
+```
 

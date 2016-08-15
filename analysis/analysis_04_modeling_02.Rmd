@@ -1,7 +1,7 @@
 ---
 title: "modeling2: Flexible models"
 author: "Sebastian Sauer"
-date: "1 August 2016"
+date: "`r Sys.time()`"
 output: 
   html_document:
     code_folding: hide
@@ -20,6 +20,9 @@ knitr::opts_chunk$set(echo = FALSE,
                       warning = FALSE, 
                       message = FALSE)
 
+
+library(corrr)
+library(purrr)
 library(doMC)
 library(pscl)  # pseudo R^2
 library(magrittr) # piping
@@ -51,14 +54,16 @@ registerDoMC(cores = 4)
 
 ```{r paths}
 # PROJHOME that's the project home folder; same as R Project working dir
-paths_file <- file.path(PROJHOME, "functions", "paths.R")
+# paths_file <- file.path(PROJHOME, "analysis/functions", "paths.R")  # for R
+paths_file <- file.path(PROJHOME, "functions", "paths.R")  # for knitr
+
 source(paths_file)
 ```
 
 
 ```{r set_project_wd}
 # define global paths
-setwd(path_analysis)
+# setwd(path_analysis)
 
 ```
 
@@ -641,7 +646,95 @@ mod_results$svm_2 <- save_model_results(obj = svm_2,
 ```
 
 
+# Sense check
 
+As the results were not as (good as) expected, let's do a sense check.
+
+## Compare groups of outcome variable for each numeric predictor
+
+If the outcome variables are expected to exert an influence on the binary outcome, they should separate the groups, right?
+
+Ok, let's see.
+
+```{r}
+
+data_class %>% 
+  select_if(is.numeric) %>% names -> num_preds
+
+data_class %>% 
+  select(one_of(num_preds)) %>% 
+  na.omit() %>% 
+  map(~t.test(. ~ data_class$responder_3m_f)$p.value) %>% 
+  as.data.frame %>% 
+  gather %>% 
+  mutate(signif = ifelse(value < .05, "significant", "ns")) %>% 
+  ggplot(aes(x = reorder(key, value), y = value)) + 
+  geom_point(aes(color = signif)) + 
+  coord_flip() +
+  ylab("p value") +
+  xlab("predictor") +
+  ggtitle("Differences (t-test p-value) between the two outcome groups")
+  
+```
+
+So out of all predictors, it appears that only 4 are statistically significant. That is, the two outcome groups differ statistically significantly on these values:
+
+```{r}
+data_class %>% 
+  select(one_of(num_preds)) %>% 
+  na.omit() %>% 
+  map(~t.test(. ~ data_class$responder_3m_f)$p.value) %>% 
+  as.data.frame %>% 
+  gather %>% 
+  filter(value <  .05) %>% 
+  arrange(value)
+```
+
+Note that no control for multiple testing was undertaken. Interpret with caution.
+
+## Assocation of predictors with numeric outcome variable `CYBOCS_3m`
+
+Now let's look at something similar: The association of the (numeric) predictors with the numeric outcome variable
+
+
+```{r read_numeric_outcome}
+data2 <- read_csv("../raw_data/data_mod2.csv")
+```
+
+
+```{r}
+data2 %>% 
+  select_if(is.numeric) %>% 
+  correlate %>% 
+  focus(CYBOCS_3m) %>% 
+  arrange(desc(abs(CYBOCS_3m))) %>% print(n=32)
+
+```
+Hey, that looks quite promising!
+
+Let's finally plot it:
+
+
+
+```{r plot_assocation_predictors_cybocs3m}
+
+data_rect <- data.frame(xmin = -Inf, xmax = Inf, ymin = -.1, ymax = .1)
+
+data2 %>% 
+  select_if(is.numeric) %>% 
+  correlate %>% 
+  focus(CYBOCS_3m) %>% 
+  arrange(desc(abs(CYBOCS_3m))) %>% print(n=32) %>% 
+  ggplot(aes(x = reorder(rowname, abs(CYBOCS_3m)), y = CYBOCS_3m)) + geom_point() +
+  coord_flip() +
+  xlab("predictor") +
+  ylab("Correlation with CYBOCS_3m") +
+  ggtitle("Correlations of predictors with outcome (CYBOCS_3m)") +
+  geom_hline(yintercept = 0, linetype = "dashed")  +
+  geom_rect(data = data_rect, 
+           aes(ymin = ymin, ymax = ymax, xmin = xmin, xmax = xmax), inherit.aes = FALSE, alpha = .5, fill = "red", color = "red")
+
+```
 
 Don't forget to save results to disk...
 
