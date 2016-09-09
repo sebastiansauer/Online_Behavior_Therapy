@@ -1,0 +1,1 @@
+setwd(knitr_path)

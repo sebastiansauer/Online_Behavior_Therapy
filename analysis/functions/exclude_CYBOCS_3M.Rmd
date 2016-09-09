@@ -1,4 +1,4 @@
-```{r exclude_metric_outocme}
+```{r exclude_metric_outcome}
 
 exclude_metric_outcome <- function(data_df = data_class){
   if ("CYBOCS_3m" %in% names(data_df)) {

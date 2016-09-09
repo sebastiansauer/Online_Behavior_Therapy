@@ -1,5 +1,5 @@
 ---
-title: "modeling2: Flexible models"
+title: "modeling2: Flexible models for classification"
 author: "Sebastian Sauer"
 date: "`r Sys.time()`"
 output: 
@@ -190,10 +190,10 @@ print(lasso_cv)
 
 For help on the results, use `?cv.glmnet`.
 
+Here, different values for tuning parameter `lambda` are shown (the penalty parameters).
 
-Here, different values for tuning parameter `alpha` are shown (the penalty parameters).
+Let's look at how the error rate develops as a function of `lamba`.
 
-Let's look at how the error rate (binomial) develops as a function of alpha.
 
 ```{r plot_lasso_alpha}
 plot(lasso_cv)
@@ -722,7 +722,7 @@ data_rect <- data.frame(xmin = -Inf, xmax = Inf, ymin = -.1, ymax = .1)
 
 data2 %>% 
   select_if(is.numeric) %>% 
-  correlate %>% 
+  correlate %>% head
   focus(CYBOCS_3m) %>% 
   arrange(desc(abs(CYBOCS_3m))) %>% print(n=32) %>% 
   ggplot(aes(x = reorder(rowname, abs(CYBOCS_3m)), y = CYBOCS_3m)) + geom_point() +

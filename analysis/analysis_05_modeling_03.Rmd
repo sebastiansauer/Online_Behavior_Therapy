@@ -1,0 +1,321 @@
+---
+title: "modeling2: Flexible models for regression (quantitative outcome)"
+author: "Sebastian Sauer"
+date: "`r Sys.time()`"
+output: 
+  html_document:
+    code_folding: hide
+    toc: yes
+    toc_depth: 3
+    number_sections: true
+---
+
+# Setup
+
+```{r setup, include=FALSE}
+
+message("***starting\n***")
+
+knitr::opts_chunk$set(echo = FALSE, 
+                      cache = TRUE, 
+                      warning = FALSE, 
+                      message = FALSE)
+
+
+library(corrr)
+library(purrr)
+library(doMC)
+library(pscl)  # pseudo R^2
+library(magrittr) # piping
+library(mice)  # imputation
+library(testthat)  # testing
+library(readr) # csv import
+library(knitr) # rmarkdown
+library(tidyr) # tibbling objects
+library(caret) # modeling
+library(ggplot2) # plotting
+library(tibble) # tibble
+library(dplyr) # data wrangling
+
+
+# results/ variables
+mod_results_regression <- list()
+
+
+# overhead
+write_to_file <- FALSE
+recompute <- FALSE
+test_it <- FALSE
+registerDoMC(cores = 4)
+
+
+```
+
+
+```{r paths}
+# PROJHOME that's the project home folder; same as R Project working dir
+# knitr uses a *different* path, ie. where the present Rmd-file resides. 
+# That's why I manually equalize both paths.
+knitr_path <- file.path(PROJHOME, "analysis")
+
+# paths_file <- file.path(PROJHOME, "analysis/functions", "paths.R")  # for R
+# paths_file <- file.path(PROJHOME, "functions", "paths.R")  # for knitr
+paths_file <- file.path(knitr_path, "functions", "paths.R")
+source(paths_file)
+```
+
+
+```{r read_data}
+data_regr <- read_csv("../raw_data/data_mod2.csv")
+
+
+data_regr <- data_regr %>% dplyr::select(-ID)  # exclude ID
+
+
+
+# change characters to factors
+data_regr %>% 
+  mutate_if(is.character, factor) -> data_regr
+
+
+# change strange factor levels to well-behaved ones
+data_regr$contact <- dplyr::recode_factor(data_regr$contact, `Self-referral` = "0", `CAMHS referral` = "1")
+
+
+load(file = "mod_results.Rda")
+
+```
+
+
+``` {r child = 'functions/save_results.Rmd'}
+```
+
+
+# Upfront work
+
+Before I forget: we need to exclude the categorial outcome variable `responder_3m_f`.
+
+```{r}
+if ("responder_3m_f" %in% names(data_regr)) {
+  dplyr::select(data_regr, - responder_3m_f) -> data_regr
+  message("responder_3m_f has been excluded from data set.")
+} else message("responder_3m_f was *not* present in data set.")
+
+```
+
+
+## split in train vs. test sample
+
+```{r}
+set.seed(42)
+trainIndex <- createDataPartition(data_regr$CYBOCS_3m, p = .8,
+                                  list = FALSE,
+                                  times = 1)
+
+train_sample <- data_regr[trainIndex, ]
+test_sample <- data_regr[-trainIndex, ]
+
+
+
+predictor_names <- names(train_sample)[names(train_sample) != "CYBOCS_3m"]
+outcome_name <- "CYBOCS_3m"
+
+```
+
+
+# Models
+## Lasso 80/20
+```{r lasso_function, echo = TRUE}
+
+do_lasso <- function(data = data_regr, p = .8, save = FALSE){
+
+
+
+  data_mm <- model.matrix(CYBOCS_3m ~ ., data = data)
+  
+  data_mm <- data_mm[, -1]  #exclude intercept as glmnet demeans the data and reports intercept by default: http://stats.stackexchange.com/questions/99546/2-intercept-cooficients-in-glmnet-output
+  
+  set.seed(42)
+  trainIndex <- createDataPartition(data$CYBOCS_3m, p = p,
+                                    list = FALSE,
+                                    times = 1)
+  
+  train_mm <- data_mm[trainIndex, ]
+  test_mm <- data_mm[-trainIndex, ]
+  train_sample <- data_regr[trainIndex, ]
+  test_sample <- data_regr[-trainIndex, ]
+  
+  
+  
+  lasso_cv <- glmnet::cv.glmnet(x = train_mm, 
+                                y = train_sample$CYBOCS_3m, 
+                                family = "gaussian",
+                                alpha = 1)  # lasso penalty
+  
+  
+  summary(lasso_cv)
+  print(lasso_cv)
+  plot(lasso_cv)
+  
+  coef_lasso_1 <- coef(lasso_cv, s = "lambda.min")
+  coef_lasso_1
+  coef_lasso_1_num <- as.numeric(coef_lasso_1)
+  index_coefs_not_zero <- which(coef_lasso_1_num != 0)
+  names_not_zero <- coef_lasso_1@Dimnames[[1]][index_coefs_not_zero]
+  values_not_zero <- coef_lasso_1_num[coef_lasso_1_num != 0]
+  
+  lasso_coefs_not_zero <- tibble(
+    name = names_not_zero,
+    value = values_not_zero
+  )
+  
+  ggplot(lasso_coefs_not_zero, aes(x = name, y = value)) +
+    geom_point() +
+    coord_flip() +
+    ggtitle("Non-zero regression values for Lasso GLM net 80/20 sample")
+  
+  lasso_pred <- predict(lasso_cv, test_mm, s = "lambda.min", type = "response")
+  lasso_pred <- as.numeric(lasso_pred)
+  str(lasso_pred)
+  
+  temp <- tibble(
+    pred = as.numeric(lasso_pred),
+    test = test_sample$CYBOCS_3m
+  )
+  
+  ggplot(temp, aes(x = test, y = pred)) + 
+    geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+    geom_point() +
+    xlim(c(0,20)) +
+    ylim(c(0,20)) +
+    ggtitle("Test sample (real) values vs. predicted values")
+  
+  cat(paste("R squared is:", round(R2(temp$pred, temp$test), 2), "\n"))
+  
+  cat(paste("RMSE is:", round(RMSE(temp$pred, temp$test), 2), "\n"))
+  
+  cat(paste("Mean absolute error is:", round(mean(abs(temp$pred - temp$test)), 2), "\n"))
+  
+  
+  if (save == TRUE) {
+    mod_results$lasso_reg_1 <- save_model_results(obj = lasso_cv, 
+                                                  test_df = test_mm, 
+                                                  predict_results = FALSE,
+                                                  report_varimp = FALSE,
+                                                  fit_pred = lasso_pred,
+                                                  conf_matrix = "none")
+  }
+
+}
+
+
+```
+
+
+```{r lasso1, echo = TRUE}
+
+do_lasso()
+
+```
+
+
+
+## Lasso 60/40
+
+Let's compute the Lasso again but increase the test sample. 20% test sample amounts to 10 observations only. One could speculate that is is too few for numeric stability.
+
+
+```{r compute_lasso_60_40, echo = TRUE}
+
+
+
+data_mm <- model.matrix(CYBOCS_3m ~ ., data = data_regr)
+
+data_mm <- data_mm[, -1]  #exclude intercept as glmnet demeans the data and reports intercept by default: http://stats.stackexchange.com/questions/99546/2-intercept-cooficients-in-glmnet-output
+
+set.seed(42)
+trainIndex <- createDataPartition(data_regr$CYBOCS_3m, p = .6,
+                                  list = FALSE,
+                                  times = 1)
+
+train_mm <- data_mm[trainIndex, ]
+test_mm <- data_mm[-trainIndex, ]
+train_sample <- data_regr[trainIndex, ]
+test_sample <- data_regr[-trainIndex, ]
+
+
+
+
+lasso_cv_2 <- glmnet::cv.glmnet(x = train_mm, 
+                        y = train_sample$CYBOCS_3m, 
+                        family = "gaussian",
+                        alpha = 1)  # lasso penalty
+```
+
+
+Now, let's check the results.
+
+
+```{r lasso_results}
+summary(lasso_cv_2)
+print(lasso_cv_2)
+```
+
+For help on the results, use `?cv.glmnet`.
+
+
+Here, different values for tuning parameter `lambda` are shown (the penalty parameters).
+
+Let's look at how the error rate develops as a function of `lamba`.
+
+```{r plot_lasso_alpha}
+plot(lasso_cv_2)
+```
+
+Ok, so some small log lambda (close to zero) seem appropriate.
+
+For ths best model, let's look at the shrinked model parameters:
+```{r print_lasso_coef}
+coef_lasso_2 <- coef(lasso_cv_2, s = "lambda.min")
+coef_lasso_2
+coef_lasso_2_num <- as.numeric(coef_lasso_2)
+index_coefs_not_zero_2 <- which(coef_lasso_2_num != 0)
+names_not_zero_2 <- coef_lasso_2@Dimnames[[1]][index_coefs_not_zero_2]
+values_not_zero_2 <- coef_lasso_2_num[coef_lasso_2_num != 0]
+
+lasso_coefs_not_zero_2 <- tibble(
+  name = names_not_zero_2,
+  value = values_not_zero_2
+)
+
+ggplot(lasso_coefs_not_zero_2, aes(x = name, y = value)) +
+  geom_point() +
+  coord_flip() +
+  ggtitle("Non-zero regression values for Lasso GLM net 60/40 sample")
+
+```
+
+
+Now, let's test the model, ie., look at the prediciont (hold-out/test sample).
+
+
+```{r predict_lasso_2}
+lasso_pred_2 <- predict(lasso_cv_2, test_mm, s = "lambda.min", type = "response")
+lasso_pred_2
+
+```
+
+
+```{r lasso_2_save}
+
+#debug(save_model_results)
+mod_results$lasso_reg_2 <- save_model_results(obj = lasso_cv_2, 
+                                        test_df = test_mm, 
+                                        predict_results = FALSE,
+                                        report_varimp = FALSE,
+                                        fit_pred = lasso_pred,
+                                        conf_matrix = "none")
+```
+
+
+

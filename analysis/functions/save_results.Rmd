@@ -22,9 +22,11 @@ save_model_results <- function(obj,
     
     print(fit_pred)
     
-    message("confusion matrix for predicted values and factual values: \n")
-    results$confusion_matrix <- confusionMatrix(data = fit_pred, test_df$responder_3m_f)
-    print(results$confusion_matrix)
+    if (conf_matrix != "none"){
+      message("confusion matrix for predicted values and factual values: \n")
+      results$confusion_matrix <- confusionMatrix(data = fit_pred, test_df$responder_3m_f)
+      print(results$confusion_matrix)
+    }
   }
 
   if (report_varimp == TRUE){
@@ -32,7 +34,7 @@ save_model_results <- function(obj,
     print(results$varimp)
   }
   
-  if (exists("fit_pred") & (fit_pred != "none")) {
+  if (fit_pred != "none") {
     message("prediction object saved to results list.")
     results$prediction_results <- fit_pred
     
@@ -50,8 +52,6 @@ save_model_results <- function(obj,
   }
   
   
-  cat("\n")
-
   return(results)
 }
 
