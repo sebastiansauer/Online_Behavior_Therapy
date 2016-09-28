@@ -31,13 +31,13 @@ library(GGally)
 #library(plotly)
 library(tidyr)
 #library(gridExtra)
-library(DiagrammeR)
+# library(DiagrammeR)
 library(DT)
 library(dplyr)
 library(ggplot2)
 
 
-knitr::opts_chunk$set(echo = FALSE, cache = TRUE, warning = FALSE, message = FALSE)
+knitr::opts_chunk$set(echo = FALSE, cache = FALSE, warning = FALSE, message = FALSE)
 
 
 # define paths
@@ -67,8 +67,9 @@ data <- read_csv(path_file_data)
 
 search_string <- "sum"
 data %>% 
-  select(matches("sum")) -> data_sumscores
+  dplyr::select(dplyr::matches("sum")) -> data_sumscores
 
+names(data_sumscores)
 
 data %>% 
   mutate(responder_3m_f = factor(responder_3m)) -> data
@@ -86,12 +87,14 @@ data %>%
   tibble::rownames_to_column() %>%
   filter(nzv == TRUE) -> data_nzv
 
+data_nzv
+
 nzv_vars <- data_nzv$rowname
 
 
 data %>%
-  select(Depression:GAD, responder_3m, responder_3m_f) %>%
-  select(-one_of(nzv_vars)) %>%
+  dplyr::select( Depression:GAD, responder_3m, responder_3m_f) %>%
+  dplyr::select(-one_of(nzv_vars)) %>%
   na.omit -> data_comorb
 
 
@@ -194,9 +197,9 @@ lapply(names(data_numeric), function(x) gg_geom(x, data_numeric, geom_bar, flip 
 Predictors without (much) variance do not add to the model. Better exclude them, at least know them.
 
 ```{r check_nzv}
-# data %>%
-#   select(-ID) %>%
-#   nearZeroVar(., saveMetrics = TRUE) 
+data %>%
+  select(-ID) %>%
+  nearZeroVar(., saveMetrics = TRUE)
 
 datatable(data_nzv)
 
@@ -232,11 +235,11 @@ No variables are highly correlated (>.90) in this dataset.
 sum_num %>%
   select(na) %>%
   rownames_to_column %>%
-  filter(na != 0) %>% 
-  ggplot(aes(x  = rowname, y = na, label = na)) + 
-    geom_bar(stat = "identity") +
-    coord_flip() +
-    ggtitle("Number of missing values per variable") 
+  filter(na != 0)# %>% 
+  # ggplot(aes(x  = rowname, y = na, label = na)) + 
+  #   geom_bar(stat = "identity") +
+  #   coord_flip() +
+  #   ggtitle("Number of missing values per variable") 
 
 ```
 
@@ -687,9 +690,20 @@ In total, 3 sets of variables then: basic variables (including outcome and exper
 
 ```{r}
 vars_short <- unname(unlist(c(names_basic, names_sumscores, names_comorb)))
+
+data %>% 
+  dplyr::select(one_of(vars_short)) -> data_short
+
 ```
 
 In total, `r length(vars_short)` Variables: `r vars_short`.
+
+Let's save this shortended data set to disk.
+
+```{r}
+write_csv(data_short, paste(path_data, "/data_short.csv", sep = ""))
+```
+
 
 
 ## Coarse model
@@ -702,7 +716,7 @@ Vague defined, the model can be described as consisting of these predictors: dem
 ```
 
 
-```{r}
+```{r grviz, eval = FALSE}
 grViz("
 digraph test {
 
@@ -745,8 +759,7 @@ data %>%
   select(matches(search_string)) %>%
   summarise_all(funs(sum(is.na(.)))) %>%
   gather(item, n_na) %>%
-  datatable
-
+  kable
 ```
 
 

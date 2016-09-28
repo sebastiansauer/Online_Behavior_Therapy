@@ -1,5 +1,5 @@
 ---
-title: "BiPOCD_Modeling_1"
+title: "BiPOCD_Modeling_1: Linear models for classification"
 author: "Sebastian Sauer"
 date: "21 Juli 2016"
 output: 
@@ -17,7 +17,7 @@ output:
 cat("***starting\n***")
 
 knitr::opts_chunk$set(echo = FALSE, 
-                      cache = TRUE, 
+                      cache = FALSE, 
                       warning = FALSE, 
                       message = FALSE)
 
@@ -47,11 +47,12 @@ test_it <- TRUE
 
 # Modeling BiPOCD
 
-We load the data that has been prepared in the previous step.
+We load the data that has been prepared in the previous step. Dimension of the dataset (r/c):
 
 ```{r read_data}
-data_class <- read_csv("../raw_data/data_mod2.csv")
+data_class <- read_csv("../raw_data/data_mod3.csv")
 data_class$responder_3m_f <- factor(data_class$responder_3m_f)
+dim(data_class)
 ```
 
 
@@ -65,7 +66,7 @@ getwd()
 
 
 
-# classification (dichotomous)
+# Basic classification (dichotomous outcome)
 
 As we have two outcomes, one dichotomous and one metric, we can both do classification and regression. Let's look at classification first.
 
@@ -186,7 +187,7 @@ do_glmfit2 <- function(save_results = FALSE, data_df = train_sample, n_repeats =
                        repeats = n_repeats,
                        number = n_folds)  # folds
   
-  data_df <- dplyr::select(data_df, -ID)
+  if ("ID" %in% names(data_df)) data_df <- dplyr::select(data_df, -ID)
   
   glmfit2 <- caret::train(responder_3m_f ~ .,
                    data = data_df,

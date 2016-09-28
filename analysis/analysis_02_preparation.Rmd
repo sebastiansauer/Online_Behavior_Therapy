@@ -13,14 +13,14 @@ output:
 
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, cache = TRUE, warning = FALSE, message = FALSE)
+knitr::opts_chunk$set(echo = FALSE, cache = FALSE, warning = FALSE, message = FALSE)
 
 library(pscl)  # pseudo R^2
 library(magrittr) # piping
 library(mice)  # imputation
 library(readr) # csv import
 library(knitr) # rmarkdown
-library(tidyr) # tibbling objects
+library(tidyr) # tidying objects
 library(caret) # modeling
 library(ggplot2) # plotting
 #library(tibble) # tibble
@@ -261,7 +261,7 @@ Let's split the data set in two parts, for training (80%) and for testing, to av
 
 ```{r}
 set.seed(42)
-trainIndex <- createDataPartition(data_mod$responder_3m_f, p = .7,
+trainIndex <- createDataPartition(data_mod2$responder_3m_f, p = .7,
                                   list = FALSE,
                                   times = 1)
 
@@ -283,33 +283,79 @@ data_mod2 %>%
   kable
 ```
 
+And here is the list:
+```{r}
+data_mod2 %>%
+  select(-ID) %>%
+  nearZeroVar(., saveMetrics = TRUE) %>% 
+  kable
 
-Some probems occured with the sparse levels. Better exclude it.
+```
+
+
+In order to identify sparse nominal (factor) variables, we should first dummy-code them. Here is the list of sparse variables.
 
 ```{r exclude_sparse_variables}
 
-sparse_vars <- c("medication", "Education_parent", "OCD_treatm_exp", "Birthcountry", "treatm_exp")
+data_mod3 <- model.matrix(~ ., data = data_mod2)
 
-# sparse_vars %in% names(data_mod2)
+data_mod3 %>% data.frame -> data_mod3
 
-data_mod2 %>% 
-  dplyr::select(-one_of(sparse_vars)) -> data_mod2
+data_mod3 %>% 
+    nearZeroVar(., saveMetrics = TRUE) %>% 
+    kable
+
+data_mod3 %>% 
+    nearZeroVar -> sparse_vars
+
+names(data_mod3)[sparse_vars]
+
 
 ```
+
+Then let's *exclude* the NZV variables.
+
+```{r}
+
+data_mod3 %>% 
+  dplyr::select(-sparse_vars) -> data_mod3
+
+```
+
+
+Maybe we better exlude the variable `ID`.
+
+```{r}
+data_mod3 %>% 
+  select(-ID) -> data_mod3
+```
+
+And let's rename `responder_3m_f2` to `responder_3m_f`.
+
+```{r}
+data_mod3 %>% 
+  dplyr::rename(responder_3m_f = responder_3m_f2) -> data_mod3
+```
+
+
 
 Don't forget to write resulting dataframe to disk.
 
 ```{r write_datafile_to_disk}
 
 # setwd(path_data)
-if (write_to_file == TRUE) write_csv(data_mod2, path = "../raw_data/data_mod2.csv")
-
-# data_class <- data_mod2
+if (write_to_file == TRUE) write_csv(data_mod3, path = "../raw_data/data_mod3.csv")
 
 
 ```
 
-The factor variables with sparse levels (now excluded) are: `r sparse_vars`.
+The factor variables with sparse levels (now excluded) are: 
+
+```{r}
+names(data_mod3)[sparse_vars]
+```
+
+The remaining number of cols is: `r ncol(data_mod3)`.
 
 ```{r}
 cat("This is the end\n")

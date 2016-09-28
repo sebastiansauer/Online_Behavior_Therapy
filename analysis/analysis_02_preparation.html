@@ -94,6 +94,7 @@ button.code-folding-btn:focus {
 </style>
 
 
+
 <div class="container-fluid main-container">
 
 <!-- tabsets -->
@@ -153,6 +154,8 @@ $(document).ready(function () {
 <li>single items, if collapsed in sum score</li>
 </ul>
 <p>(Plus ID variable for joins etc.)</p>
+<p>Where are we?</p>
+<pre><code>## [1] &quot;/Users/sebastiansauer/Documents/OneDrive/Forschung/Online_Behavior_Therapy/analysis&quot;</code></pre>
 </div>
 <div id="replaceomit-missing-values" class="section level1">
 <h1><span class="header-section-number">2</span> Replace/omit missing values</h1>
@@ -358,9 +361,695 @@ $(document).ready(function () {
 </tr>
 </tbody>
 </table>
-<p>Some probems occured with the sparse levels. Better exclude it.</p>
+<p>And here is the list:</p>
+<table>
+<thead>
+<tr class="header">
+<th></th>
+<th align="right">freqRatio</th>
+<th align="right">percentUnique</th>
+<th align="left">zeroVar</th>
+<th align="left">nzv</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>CYBOCS_pre_OBS</td>
+<td align="right">1.111111</td>
+<td align="right">21.428571</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>CYBOCS_pre_COMP</td>
+<td align="right">1.100000</td>
+<td align="right">16.071429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>CYBOCS_pre_insight</td>
+<td align="right">1.315789</td>
+<td align="right">7.142857</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>CYBOCS_pre_avoid</td>
+<td align="right">1.117647</td>
+<td align="right">7.142857</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>ChOCI_R_C_sumsym_PRE</td>
+<td align="right">1.000000</td>
+<td align="right">39.285714</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>ChOCI_R_C_sumimp_PRE</td>
+<td align="right">1.750000</td>
+<td align="right">44.642857</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>EWSASC_sum_PRE</td>
+<td align="right">1.000000</td>
+<td align="right">48.214286</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>SCAS_S_C_sum_PRE</td>
+<td align="right">1.250000</td>
+<td align="right">37.500000</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>CDI_S_sum_PRE</td>
+<td align="right">1.200000</td>
+<td align="right">23.214286</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>ChOCI_R_P_sumsym_PRE</td>
+<td align="right">1.600000</td>
+<td align="right">37.500000</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>ChOCI_R_P_sumimp_PRE</td>
+<td align="right">1.250000</td>
+<td align="right">51.785714</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>FAS_PR_sum_PRE</td>
+<td align="right">1.250000</td>
+<td align="right">53.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>EWSASP_sum_PRE</td>
+<td align="right">2.000000</td>
+<td align="right">44.642857</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>SCAS_S_P_sum_PRE</td>
+<td align="right">1.166667</td>
+<td align="right">39.285714</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>CYBOCS_3m</td>
+<td align="right">1.400000</td>
+<td align="right">37.500000</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>Depression</td>
+<td align="right">13.000000</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>PanicDisorder</td>
+<td align="right">10.200000</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>SocialPhob</td>
+<td align="right">10.200000</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>SpecificPhob</td>
+<td align="right">7.000000</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>TourettesTics</td>
+<td align="right">13.000000</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>ADHD</td>
+<td align="right">8.333333</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>GAD</td>
+<td align="right">8.333333</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>numberdiagnos</td>
+<td align="right">2.000000</td>
+<td align="right">8.928571</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>sex</td>
+<td align="right">1.434783</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>age</td>
+<td align="right">1.200000</td>
+<td align="right">10.714286</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>Birthcountry</td>
+<td align="right">17.000000</td>
+<td align="right">5.357143</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>Education_parent</td>
+<td align="right">2.416667</td>
+<td align="right">12.500000</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>contact</td>
+<td align="right">17.666667</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>distance</td>
+<td align="right">1.333333</td>
+<td align="right">73.214286</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>medication</td>
+<td align="right">4.200000</td>
+<td align="right">8.928571</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>medication_yesno</td>
+<td align="right">3.000000</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>treatm_exp</td>
+<td align="right">1.523810</td>
+<td align="right">7.142857</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>OCD_treatm_exp</td>
+<td align="right">3.230769</td>
+<td align="right">5.357143</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>responder_3m_f</td>
+<td align="right">1.434783</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>CGI_S_pre</td>
+<td align="right">2.200000</td>
+<td align="right">7.142857</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>checking</td>
+<td align="right">1.947368</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>obsessions</td>
+<td align="right">1.000000</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>contamination</td>
+<td align="right">1.666667</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>symmetry</td>
+<td align="right">2.294118</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+</tbody>
+</table>
+<p>In order to identify sparse nominal (factor) variables, we should first dummy-code them. Here is the list of sparse variables.</p>
+<table>
+<thead>
+<tr class="header">
+<th></th>
+<th align="right">freqRatio</th>
+<th align="right">percentUnique</th>
+<th align="left">zeroVar</th>
+<th align="left">nzv</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>X.Intercept.</td>
+<td align="right">0.000000</td>
+<td align="right">1.785714</td>
+<td align="left">TRUE</td>
+<td align="left">TRUE</td>
+</tr>
+<tr class="even">
+<td>CYBOCS_pre_OBS</td>
+<td align="right">1.111111</td>
+<td align="right">21.428571</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>CYBOCS_pre_COMP</td>
+<td align="right">1.100000</td>
+<td align="right">16.071429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>CYBOCS_pre_insight</td>
+<td align="right">1.315789</td>
+<td align="right">7.142857</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>CYBOCS_pre_avoid</td>
+<td align="right">1.117647</td>
+<td align="right">7.142857</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>ChOCI_R_C_sumsym_PRE</td>
+<td align="right">1.000000</td>
+<td align="right">39.285714</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>ChOCI_R_C_sumimp_PRE</td>
+<td align="right">1.750000</td>
+<td align="right">44.642857</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>EWSASC_sum_PRE</td>
+<td align="right">1.000000</td>
+<td align="right">48.214286</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>SCAS_S_C_sum_PRE</td>
+<td align="right">1.250000</td>
+<td align="right">37.500000</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>CDI_S_sum_PRE</td>
+<td align="right">1.200000</td>
+<td align="right">23.214286</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>ChOCI_R_P_sumsym_PRE</td>
+<td align="right">1.600000</td>
+<td align="right">37.500000</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>ChOCI_R_P_sumimp_PRE</td>
+<td align="right">1.250000</td>
+<td align="right">51.785714</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>FAS_PR_sum_PRE</td>
+<td align="right">1.250000</td>
+<td align="right">53.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>EWSASP_sum_PRE</td>
+<td align="right">2.000000</td>
+<td align="right">44.642857</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>SCAS_S_P_sum_PRE</td>
+<td align="right">1.166667</td>
+<td align="right">39.285714</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>CYBOCS_3m</td>
+<td align="right">1.400000</td>
+<td align="right">37.500000</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>Depression</td>
+<td align="right">13.000000</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>PanicDisorder</td>
+<td align="right">10.200000</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>SocialPhob</td>
+<td align="right">10.200000</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>SpecificPhob</td>
+<td align="right">7.000000</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>TourettesTics</td>
+<td align="right">13.000000</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>ADHD</td>
+<td align="right">8.333333</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>GAD</td>
+<td align="right">8.333333</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>numberdiagnos</td>
+<td align="right">2.000000</td>
+<td align="right">8.928571</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>sexgirl</td>
+<td align="right">1.434783</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>age</td>
+<td align="right">1.200000</td>
+<td align="right">10.714286</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>BirthcountryOther.european</td>
+<td align="right">17.666667</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>BirthcountrySweden</td>
+<td align="right">10.200000</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>Education_parentDoctoral.degree</td>
+<td align="right">55.000000</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">TRUE</td>
+</tr>
+<tr class="even">
+<td>Education_parentHigh.school</td>
+<td align="right">3.666667</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>Education_parentOther</td>
+<td align="right">6.000000</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>Education_parentPrimary</td>
+<td align="right">55.000000</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">TRUE</td>
+</tr>
+<tr class="odd">
+<td>Education_parentUniversity</td>
+<td align="right">1.074074</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>Education_parentVocational</td>
+<td align="right">27.000000</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">TRUE</td>
+</tr>
+<tr class="odd">
+<td>contactSelf.referral</td>
+<td align="right">17.666667</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>distance</td>
+<td align="right">1.333333</td>
+<td align="right">73.214286</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>medicationcomb.SSRI.and.CS</td>
+<td align="right">55.000000</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">TRUE</td>
+</tr>
+<tr class="even">
+<td>medicationnone</td>
+<td align="right">3.000000</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>medicationSSRI</td>
+<td align="right">4.600000</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>medicationtricyclic.antidepressives</td>
+<td align="right">55.000000</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">TRUE</td>
+</tr>
+<tr class="odd">
+<td>medication_yesno</td>
+<td align="right">3.000000</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>treatm_expCAMHS.councelling</td>
+<td align="right">1.666667</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>treatm_expCAMHS.dynamic</td>
+<td align="right">55.000000</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">TRUE</td>
+</tr>
+<tr class="even">
+<td>treatm_expnone</td>
+<td align="right">1.333333</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>OCD_treatm_expgeneral.councelling</td>
+<td align="right">55.000000</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">TRUE</td>
+</tr>
+<tr class="even">
+<td>OCD_treatm_expnone</td>
+<td align="right">3.000000</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>responder_3m_f2</td>
+<td align="right">1.434783</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>CGI_S_pre</td>
+<td align="right">2.200000</td>
+<td align="right">7.142857</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>checking</td>
+<td align="right">1.947368</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>obsessions</td>
+<td align="right">1.000000</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>contamination</td>
+<td align="right">1.666667</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="even">
+<td>symmetry</td>
+<td align="right">2.294118</td>
+<td align="right">3.571429</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+<tr class="odd">
+<td>ID</td>
+<td align="right">1.000000</td>
+<td align="right">100.000000</td>
+<td align="left">FALSE</td>
+<td align="left">FALSE</td>
+</tr>
+</tbody>
+</table>
+<pre><code>## [1] &quot;X.Intercept.&quot;                       
+## [2] &quot;Education_parentDoctoral.degree&quot;    
+## [3] &quot;Education_parentPrimary&quot;            
+## [4] &quot;Education_parentVocational&quot;         
+## [5] &quot;medicationcomb.SSRI.and.CS&quot;         
+## [6] &quot;medicationtricyclic.antidepressives&quot;
+## [7] &quot;treatm_expCAMHS.dynamic&quot;            
+## [8] &quot;OCD_treatm_expgeneral.councelling&quot;</code></pre>
+<p>Then let’s <em>exclude</em> the NZV variables.</p>
+<p>Maybe we better exlude the variable <code>ID</code>.</p>
+<p>And let’s rename <code>responder_3m_f2</code> to <code>responder_3m_f</code>.</p>
 <p>Don’t forget to write resulting dataframe to disk.</p>
-<p>The factor variables with sparse levels (now excluded) are: medication, Education_parent, OCD_treatm_exp, Birthcountry, treatm_exp.</p>
+<p>The factor variables with sparse levels (now excluded) are:</p>
+<pre><code>## [1] &quot;CYBOCS_pre_OBS&quot;        &quot;Education_parentOther&quot; &quot;distance&quot;             
+## [4] &quot;medicationSSRI&quot;        &quot;treatm_expnone&quot;        &quot;CGI_S_pre&quot;            
+## [7] &quot;contamination&quot;         NA</code></pre>
+<p>The remaining number of cols is: 44.</p>
 <pre><code>## This is the end</code></pre>
 </div>
 
@@ -375,6 +1064,7 @@ $(document).ready(function () {
 $(document).ready(function () {
   $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
 });
+
 
 </script>
 

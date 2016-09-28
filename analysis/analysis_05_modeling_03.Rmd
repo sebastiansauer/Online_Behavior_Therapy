@@ -1,5 +1,5 @@
 ---
-title: "modeling2: Flexible models for regression (quantitative outcome)"
+title: "modeling3: Flexible models for regression (quantitative outcome)"
 author: "Sebastian Sauer"
 date: "`r Sys.time()`"
 output: 
@@ -11,6 +11,8 @@ output:
 ---
 
 # Setup
+
+Load packages, define overhead.
 
 ```{r setup, include=FALSE}
 
