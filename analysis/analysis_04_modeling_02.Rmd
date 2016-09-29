@@ -47,6 +47,7 @@ library(caret) # modeling
 library(ggplot2) # plotting
 library(tibble) # tibble
 library(dplyr) # data wrangling
+library(glmnet)
 
 
 # results/ variables
@@ -68,9 +69,9 @@ Define paths (data, code, output, etc.).
 # PROJHOME that's the project home folder; same as R Project working dir
 
 
-paths_file <- file.path(PROJHOME, "analysis/functions", "paths.R")  # for knitr
+#paths_file <- file.path(PROJHOME, "analysis/functions", "paths.R")  # for knitr
 
-source(paths_file)
+source("analysis/functions/paths.R")
 ```
 
 Read data.
@@ -110,7 +111,7 @@ data_class %>%
 ```
 
 Load function "save_results.Rdm"
-``` {r child = 'functions/save_results.Rmd'}
+``` {r fun_save, child = 'functions/save_results.Rmd'}
 ```
 
 
@@ -119,18 +120,19 @@ Load function "save_results.Rdm"
 
 Before I forget: we need to exclude the metric outcome variable `CYBOCS_3m`.
 
-```{r child = "functions/exclude_CYBOCS_3M.Rmd"}
-# child files need to be run by hand if not in knitr mode, but if in plain R.
+```{r fun_exclude, child = "functions/exclude_CYBOCS_3M.Rmd"}
+
 ```
 
 Now, let's split up the data in a test sample and a training sample.
 
 
-```{r child = "functions/test_split_data.Rmd"}
+```{r fun_tst, child = "functions/test_split_data.Rmd"}
+
 ```
 
 
-```{r}
+```{r split_sample}
 set.seed(42)
 trainIndex <- createDataPartition(data_class$responder_3m_f, p = .8,
                                   list = FALSE,
@@ -205,7 +207,7 @@ For help on the results, use `?cv.glmnet`.
 
 Here, different values for tuning parameter `lambda` are shown (the penalty parameters).
 
-Let's look at how the error rate develops as a function of `lamba`.
+Let's look at how the error rate develops as a function of `lambda`.
 
 
 ```{r plot_lasso_alpha}
@@ -358,7 +360,7 @@ rf1 <- caret::train(responder_3m_f ~ .,
 
 Now, let's check the results.
 
-```{r}
+```{r print_rf1}
 print(rf1)
 print(rf1$finalModel)
 
@@ -431,7 +433,7 @@ rf2 <- caret::train(responder_3m_f ~ .,
 
 Now, let's check the results.
 
-```{r}
+```{r print_rf2}
 print(rf2)
 print(rf2$finalModel)
 
@@ -692,7 +694,7 @@ data_class %>%
 
 So out of all predictors, it appears that only few are statistically significant. That is, the two outcome groups differ statistically significantly on these values:
 
-```{r}
+```{r signif_preds}
 data_class %>% 
   select(one_of(num_preds)) %>% 
   na.omit() %>% 
@@ -707,10 +709,10 @@ Note that no control for multiple testing was undertaken. Interpret with caution
 
 Maybe better to look for the effect size in each case:
 
-```{r}
+```{r es_plot_1}
 data_class %>% 
-  select_if(is.numeric) %>% 
-  dplyr::select(-CYBOCS_3m) %>% names -> num_preds
+  select_if(is.numeric) %>% names -> num_preds
+
 
 data_class %>% 
   dplyr::select(one_of(num_preds)) %>% 
@@ -751,7 +753,7 @@ es_plot_1
 
 A bit more specifically, let's look at one predictor variable how the groups differ in that variable with regard to effect size (d).
 
-```{r}
+```{r es_plot_example}
 data_class %>% 
   dplyr::select(CGI_S_pre, responder_3m_f) %>% 
   ggplot(aes(x = responder_3m_f, y = CGI_S_pre)) +
@@ -765,7 +767,7 @@ Hm, does not appear to show a strong difference between the groups.
 
 Much more tangible than d is CLES, that's the probability than some one of group 1 will have an higher value than a randomly chosen person from group 2. Let's plot that, but note that it's a function of d (so no new information).
 
-```{r}
+```{r es_plot_2}
 
 
 data_class_effsize %>% 
@@ -782,13 +784,12 @@ data_class_effsize %>%
 es_plot_2
 
 
-XXX
 ```
 
 
 Both plots together:
 
-```{r}
+```{r es_plot_grid}
 grid.arrange(es_plot_1, es_plot_2)
 ```
 
@@ -797,14 +798,8 @@ grid.arrange(es_plot_1, es_plot_2)
 
 Now let's look at something similar: The association of the (numeric) predictors with the numeric outcome variable
 
-
-```{r read_numeric_outcome}
-data2 <- read_csv("../raw_data/data_mod2.csv")
-```
-
-
 ```{r}
-data2 %>% 
+data_class %>% 
   select_if(is.numeric) %>% 
   correlate %>% 
   focus(CYBOCS_3m) %>% 
@@ -821,19 +816,20 @@ Let's finally plot it:
 
 data_rect <- data.frame(xmin = -Inf, xmax = Inf, ymin = -.1, ymax = .1)
 
-data2 %>% 
+
+data_class %>% 
   select_if(is.numeric) %>% 
-  correlate %>% head
+  correlate  %>% 
   focus(CYBOCS_3m) %>% 
   arrange(desc(abs(CYBOCS_3m))) %>% print(n=32) %>% 
   ggplot(aes(x = reorder(rowname, abs(CYBOCS_3m)), y = CYBOCS_3m)) + geom_point() +
   coord_flip() +
   xlab("predictor") +
   ylab("Correlation with CYBOCS_3m") +
-  ggtitle("Correlations of predictors with outcome (CYBOCS_3m)") +
+  # ggtitle("Correlations of predictors with outcome (CYBOCS_3m)") +
   geom_hline(yintercept = 0, linetype = "dashed")  +
   geom_rect(data = data_rect, 
-           aes(ymin = ymin, ymax = ymax, xmin = xmin, xmax = xmax), inherit.aes = FALSE, alpha = .5, fill = "red", color = "red")
+           aes(ymin = ymin, ymax = ymax, xmin = xmin, xmax = xmax), inherit.aes = FALSE, alpha = .3, fill = "red", color = "red")
 
 ```
 

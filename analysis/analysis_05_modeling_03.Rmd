@@ -12,16 +12,31 @@ output:
 
 # Setup
 
-Load packages, define overhead.
+
+Setup knitr.
+
 
 ```{r setup, include=FALSE}
 
 message("***starting\n***")
 
+library(knitr)
+opts_knit$set(root.dir=normalizePath('../'))
+
 knitr::opts_chunk$set(echo = TRUE, 
                       cache = TRUE, 
                       warning = FALSE, 
                       message = FALSE)
+```
+
+
+
+Load packages, define overhead.
+
+
+```{r libs, include=FALSE}
+
+
 
 
 library(corrr)
@@ -56,21 +71,12 @@ registerDoMC(cores = 4)
 
 
 ```{r paths}
-# PROJHOME that's the project home folder; same as R Project working dir
-# knitr uses a *different* path, ie. where the present Rmd-file resides. 
-# That's why I manually equalize both paths.
-knitr_path <- file.path(PROJHOME, "analysis")
-
-# paths_file <- file.path(PROJHOME, "analysis/functions", "paths.R")  # for R
-paths_file <- file.path(PROJHOME, "functions", "paths.R")  # for knitr
-# paths_file <- file.path(knitr_path, "functions", "paths.R")
-source(paths_file)
+source("analysis/functions/paths.R")
 ```
 
 
 ```{r read_data}
-data_regr <- read_csv("../raw_data/data_mod2.csv")  # for knitr
-# data_regr <- read_csv("raw_data/data_mod2.csv")  # for plain R
+data_regr <- read_csv("raw_data/data_mod3.csv")  # for knitr
 
 
 data_regr <- data_regr %>% dplyr::select(-ID)  # exclude ID
@@ -99,7 +105,7 @@ load(file = "mod_results.Rda")
 
 Before I forget: we need to exclude the categorial outcome variable `responder_3m_f`.
 
-```{r}
+```{r exlude_nominal_outcome}
 if ("responder_3m_f" %in% names(data_regr)) {
   dplyr::select(data_regr, - responder_3m_f) -> data_regr
   message("responder_3m_f has been excluded from data set.")
@@ -115,21 +121,21 @@ Before starting modelling, it is instructive to visualize (again) the outcome va
 
 Histograms with 30, 20, 10 bins:
 
-```{r}
+```{r histograms1}
 ggplot(data_regr, aes(x = CYBOCS_3m)) + geom_histogram(aes(y = ..density..), bins = 30) + geom_density()
 ggplot(data_regr, aes(x = CYBOCS_3m)) + geom_histogram(aes(y = ..density..), bins = 20) + geom_density()
 ggplot(data_regr, aes(x = CYBOCS_3m)) + geom_histogram(aes(y = ..density..), bins = 10) + geom_density()
 ```
 
 Summary statistics:
-```{r}
+```{r sumamary_1}
 summary(data_regr$CYBOCS_3m) %>% tidy %>% kable
 ```
 
 
 ## split in train vs. test sample
 
-```{r}
+```{r split_sample}
 set.seed(42)
 trainIndex <- createDataPartition(data_regr$CYBOCS_3m, p = .8,
                                   list = FALSE,

@@ -23,3 +23,5 @@ corrr
 gridExtra
 broom
 compute.es
+Matrix
+glmnet

@@ -12,8 +12,25 @@ output:
 
 
 
+Setup.
+
+
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, cache = FALSE, warning = FALSE, message = FALSE)
+
+message("***starting\n***")
+
+library(knitr)
+opts_knit$set(root.dir=normalizePath('../'))
+
+knitr::opts_chunk$set(echo = TRUE, 
+                      cache = TRUE, 
+                      warning = FALSE, 
+                      message = FALSE)
+```
+
+
+Load libraries etc.
+```{r libs}
 
 library(pscl)  # pseudo R^2
 library(magrittr) # piping
@@ -89,7 +106,7 @@ prep_data <- function(data_file = path_file_data, learning_type = "classificatio
 
 
   # load data
-  data <- read_csv(paste("../raw_data/", data_file, sep = ""))
+  data <- read_csv(paste("raw_data/", data_file, sep = ""))
 
   # convert outcome to factor and relevel
   data %>%
@@ -102,6 +119,9 @@ prep_data <- function(data_file = path_file_data, learning_type = "classificatio
 
 
   data$responder_3m_f <- relevel(data$responder_3m_f, ref = "1")
+  
+  data$responder_3m_f <- factor(data$responder_3m_f, labels = c("negative", "positive"))
+
 
   # identify NZV variables
   data %>%
@@ -137,12 +157,6 @@ data_mod <- prep_data("BiPOCD_raw_data.csv")
 ```
 
 
-Where are we?
-```{r}
-getwd()
-```
-
-
 
 # Replace/omit missing values
 
@@ -151,7 +165,7 @@ getwd()
 
 How many missings do we have?
 
-```{r}
+```{r check_NA}
 data_mod %>% select_if(function(col) sum(is.na(col)) != 0) %>% names
 
 
@@ -161,14 +175,29 @@ data_mod %>%
   kable
 ```
 
-Oh no! Some NA's in our outcome variable, that's is a sad story. That reduces the sample size. We could impute, but let's forget that for now. Ok, then be hard better now than later. At least the 5 missings occur in both variables for the same cases. Good bye, guys.
+Oh no! Some NA's in our outcome variable, that's is a sad story. That reduces the sample size (for classification). We could impute, but let's forget that for now. Ok, then be hard better now than later. At least the 5 missings occur in both variables for the same cases. Good bye, guys.
 
-```{r}
+```{r exclude_NA_cybocs_3m}
 data_mod %>% 
   filter(!is.na(responder_3m_f), !is.na(CYBOCS_3m)) -> data_mod
 ```
 
 The dimension of our data set is now `r dim(data_mod)`.
+
+Let's quickly double check whether those cases are missing for the numeric outcome variable, too (this should be the case.)
+
+```{r doubecheck_NA_in_DVs}
+
+data_mod %>% 
+  dplyr::select(ID, CYBOCS_3m, responder_3m_f) %>% 
+  mutate(NA_flag = ((is.na(CYBOCS_3m)) | (is.na(responder_3m_f)))) %>% 
+  dplyr::filter(NA_flag == TRUE) %>% 
+  kable
+
+```
+
+
+Ok, so that makes sense. Five cases are not ours to see.
 
 ## NAs in predictors
 
@@ -344,7 +373,7 @@ Don't forget to write resulting dataframe to disk.
 ```{r write_datafile_to_disk}
 
 # setwd(path_data)
-if (write_to_file == TRUE) write_csv(data_mod3, path = "../raw_data/data_mod3.csv")
+if (write_to_file == TRUE) write_csv(data_mod3, path = "raw_data/data_mod3.csv")
 
 
 ```
