@@ -13,17 +13,29 @@ output:
 
 ```{r setup, include=FALSE}
 
-cat("***starting\n***")
+message("***starting\n***")
 
-knitr::opts_chunk$set(echo = FALSE, 
+library(knitr)
+opts_knit$set(root.dir=normalizePath('../'))
+
+knitr::opts_chunk$set(echo = TRUE, 
                       cache = TRUE, 
                       warning = FALSE, 
                       message = FALSE)
+```
 
 
+Load libraries, define overhead variables.
+
+```{r libs}
+
+
+library(gridExtra)
+library(broom)
+library(compute.es)
 library(corrr)
 library(purrr)
-library(doMC)
+library(doMC)  # multiple cores
 library(pscl)  # pseudo R^2
 library(magrittr) # piping
 library(mice)  # imputation
@@ -51,53 +63,53 @@ registerDoMC(cores = 4)
 # project wd
 ```
 
-
+Define paths (data, code, output, etc.).
 ```{r paths}
 # PROJHOME that's the project home folder; same as R Project working dir
-# paths_file <- file.path(PROJHOME, "analysis/functions", "paths.R")  # for R
-paths_file <- file.path(PROJHOME, "functions", "paths.R")  # for knitr
+
+
+paths_file <- file.path(PROJHOME, "analysis/functions", "paths.R")  # for knitr
 
 source(paths_file)
 ```
 
+Read data.
+```{r read_data}
+data_class <- read_csv("raw_data/data_mod3.csv")
 
-```{r set_project_wd}
-# define global paths
-# setwd(path_analysis)
+load(file = "analysis/mod_results.Rda")
 
 ```
 
 
+Prepare data (eg., change 0-1 numeric to factor...)
+```{r prepare_data}
 
-```{r read_data}
-data_class <- read_csv("../raw_data/data_mod2.csv")
-data_class$responder_3m_f <- factor(data_class$responder_3m_f)
+# helper function: check if vector is binary (ie 0 and 1 values only)
+is_binary <- function(var){
+  return(all(var %in% c(0,1)))
+}
 
 
-data_class <- data_class %>% select(-ID)  
-
-
-
-# change characters to factors
-data_class %>% 
-  mutate_if(is.character, factor) -> data_class
+if ("ID" %in% names(data_class)) data_class <- data_class %>% select(-ID)  
 
 
 # change strange factor levels to well-behaved ones
-data_class$contact <- dplyr::recode_factor(data_class$contact, `Self-referral` = "0", `CAMHS referral` = "1")
+if ("contact" %in% names(data_class)) data_class$contact <- dplyr::recode_factor(data_class$contact, `Self-referral` = "0", `CAMHS referral` = "1")
 
 
-load(file = "mod_results.Rda")
+data_class$responder_3m_f <- factor(data_class$responder_3m_f, labels = c("negative", "positive"))
+
+
+
+
+data_class %>% 
+  mutate_if(is_binary, factor) -> data_class
+
 
 ```
 
-
-Project directory should be "./analysis"; project directory is:
-```{r}
-getwd()
-```
-
-
+Load function "save_results.Rdm"
 ``` {r child = 'functions/save_results.Rmd'}
 ```
 
@@ -108,6 +120,7 @@ getwd()
 Before I forget: we need to exclude the metric outcome variable `CYBOCS_3m`.
 
 ```{r child = "functions/exclude_CYBOCS_3M.Rmd"}
+# child files need to be run by hand if not in knitr mode, but if in plain R.
 ```
 
 Now, let's split up the data in a test sample and a training sample.
@@ -319,7 +332,7 @@ Assuming 4 cores for computation.
 
 
 ## Random Forest 80/20
-Let's split up the sample in 80% training, and 20% testing first, as we did above.
+Let's split up the sample in 80% training, and 20% testing first, as we did above. Computational somewhat expensive.
 
 
 ```{r compute_random_forest}
@@ -662,22 +675,22 @@ data_class %>%
   select_if(is.numeric) %>% names -> num_preds
 
 data_class %>% 
-  select(one_of(num_preds)) %>% 
+  dplyr::select(one_of(num_preds)) %>% 
   na.omit() %>% 
   map(~t.test(. ~ data_class$responder_3m_f)$p.value) %>% 
   as.data.frame %>% 
   gather %>% 
-  mutate(signif = ifelse(value < .05, "significant", "ns")) %>% 
+  mutate(pvalue = ifelse(value < .05, "< .05", "ns")) %>% 
   ggplot(aes(x = reorder(key, value), y = value)) + 
-  geom_point(aes(color = signif)) + 
+  geom_point(aes(color = pvalue, shape = pvalue)) + 
   coord_flip() +
   ylab("p value") +
-  xlab("predictor") +
-  ggtitle("Differences (t-test p-value) between the two outcome groups")
+  xlab("predictor") #+
+  # ggtitle("Differences (t-test p-value) between the two outcome groups")
   
 ```
 
-So out of all predictors, it appears that only 4 are statistically significant. That is, the two outcome groups differ statistically significantly on these values:
+So out of all predictors, it appears that only few are statistically significant. That is, the two outcome groups differ statistically significantly on these values:
 
 ```{r}
 data_class %>% 
@@ -691,6 +704,94 @@ data_class %>%
 ```
 
 Note that no control for multiple testing was undertaken. Interpret with caution.
+
+Maybe better to look for the effect size in each case:
+
+```{r}
+data_class %>% 
+  select_if(is.numeric) %>% 
+  dplyr::select(-CYBOCS_3m) %>% names -> num_preds
+
+data_class %>% 
+  dplyr::select(one_of(num_preds)) %>% 
+  # na.omit() %>% 
+  map(~t.test(. ~ data_class$responder_3m_f)) %>% 
+  map(~compute.es::tes(.$statistic,
+                       n.1 = nrow(dplyr::filter(data_class, responder_3m_f == "negative")),
+                       n.2 = nrow(dplyr::filter(data_class, responder_3m_f == "positive")))) %>% 
+  map(~do.call(rbind, .)) %>% 
+  as.data.frame %>% 
+  t %>% 
+  data.frame %>% 
+  rownames_to_column %>% 
+  rename(predictor = rowname) -> 
+  data_class_effsize
+
+
+
+data_class_effsize %>% 
+  dplyr::select(predictor, d, l.d, u.d) %>% 
+  mutate(sign = ifelse(d > 0, "+", "-")) -> data_class_effsize_short
+
+data_class_effsize_short %>% 
+  ggplot(aes(x = reorder(predictor, d), y = d, color = sign)) + 
+  geom_hline(yintercept = 0, alpha = .4) +
+  geom_point(aes(shape = sign)) + 
+  geom_errorbar(aes(ymin = l.d, ymax = u.d)) +
+  coord_flip() +
+  ylab("effect size (d) with 95% CI") +
+  xlab("predictor") +
+  ggtitle("A") -> es_plot_1
+
+es_plot_1
+  
+```
+
+
+
+A bit more specifically, let's look at one predictor variable how the groups differ in that variable with regard to effect size (d).
+
+```{r}
+data_class %>% 
+  dplyr::select(CGI_S_pre, responder_3m_f) %>% 
+  ggplot(aes(x = responder_3m_f, y = CGI_S_pre)) +
+  geom_boxplot() + 
+  geom_jitter() 
+  
+```
+
+Hm, does not appear to show a strong difference between the groups.
+
+
+Much more tangible than d is CLES, that's the probability than some one of group 1 will have an higher value than a randomly chosen person from group 2. Let's plot that, but note that it's a function of d (so no new information).
+
+```{r}
+
+
+data_class_effsize %>% 
+  dplyr::select(predictor, cl.d) %>% 
+  mutate(sign = ifelse(cl.d > 50, "+", "-")) %>% 
+  ggplot(aes(x = reorder(predictor, cl.d), y = cl.d, color = sign)) + 
+  geom_hline(yintercept = 50, alpha = .4) +
+  geom_point(aes(shape = sign)) + 
+  coord_flip() +
+  ylab("effect size (Common Language d) with 95% CI") +
+  xlab("predictor") + 
+  ggtitle("B") -> es_plot_2
+
+es_plot_2
+
+
+XXX
+```
+
+
+Both plots together:
+
+```{r}
+grid.arrange(es_plot_1, es_plot_2)
+```
+
 
 ## Assocation of predictors with numeric outcome variable `CYBOCS_3m`
 

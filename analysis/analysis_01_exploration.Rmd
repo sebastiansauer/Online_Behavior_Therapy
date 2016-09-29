@@ -99,7 +99,9 @@ data %>%
 
 
 data %>%
-  select_if(negate(is.numeric)) -> data_numeric
+  select_if(negate(is.numeric)) -> data_non_numeric
+
+data %>% select_if(is.numeric) %>% ncol
 
 ```
 
@@ -188,7 +190,7 @@ data %>%
 
 ```{r nonnum_hist, cache = TRUE, fig.height = 3}
 
-lapply(names(data_numeric), function(x) gg_geom(x, data_numeric, geom_bar, flip = TRUE))
+lapply(names(data_non_numeric), function(x) gg_geom(x, data_non_numeric, geom_bar, flip = TRUE))
 ```
 
 
@@ -233,13 +235,13 @@ No variables are highly correlated (>.90) in this dataset.
 
 ```{r check_NA}
 sum_num %>%
-  select(na) %>%
+  dplyr::select(na) %>%
   rownames_to_column %>%
-  filter(na != 0)# %>% 
-  # ggplot(aes(x  = rowname, y = na, label = na)) + 
-  #   geom_bar(stat = "identity") +
-  #   coord_flip() +
-  #   ggtitle("Number of missing values per variable") 
+  dplyr::filter(na != 0) %>% 
+  ggplot(aes(x  = rowname, y = na, label = na)) +
+    geom_bar(stat = "identity") +
+    coord_flip() +
+    ggtitle("Number of missing values per variable")
 
 ```
 

@@ -20,3 +20,6 @@ randomForest
 kernlab
 purrr
 corrr
+gridExtra
+broom
+compute.es

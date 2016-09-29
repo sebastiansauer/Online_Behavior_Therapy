@@ -1,5 +1,6 @@
 
 save_model_results <- function(obj,
+                               test = test_sample,
                                predict_results = TRUE,
                                report_varimp = TRUE){
 
