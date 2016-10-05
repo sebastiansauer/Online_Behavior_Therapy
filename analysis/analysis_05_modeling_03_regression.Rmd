@@ -1,0 +1,873 @@
+---
+title: "modeling3: Flexible models for regression (quantitative outcome)"
+author: "Sebastian Sauer"
+date: "`r Sys.time()`"
+output: 
+  html_document:
+    code_folding: hide
+    toc: yes
+    toc_depth: 3
+    number_sections: true
+---
+
+# Setup
+
+
+Setup knitr.
+
+
+```{r setup, include=FALSE}
+
+message("***starting\n***")
+
+library(knitr)
+opts_knit$set(root.dir=normalizePath('../'))
+
+knitr::opts_chunk$set(echo = TRUE, 
+                      cache = TRUE, 
+                      warning = FALSE, 
+                      message = FALSE)
+```
+
+
+
+Load packages, define overhead.
+
+
+```{r libs, include=FALSE}
+
+
+
+library(stringr)
+library(corrr)
+library(purrr)
+library(doMC)
+library(pscl)  # pseudo R^2
+library(magrittr) # piping
+library(mice)  # imputation
+library(testthat)  # testing
+library(readr) # csv import
+library(knitr) # rmarkdown
+library(tidyr) # tibbling objects
+library(caret) # modeling
+library(ggplot2) # plotting
+library(tibble) # tibble
+library(dplyr) # data wrangling
+library(broom)
+
+
+# results/ variables
+mod_results_regression <- list()
+
+
+# overhead
+write_to_file <- FALSE
+recompute <- FALSE
+test_it <- FALSE
+registerDoMC(cores = 4)
+
+
+```
+
+
+```{r paths}
+source("analysis/functions/paths.R")
+```
+
+
+```{r read_data}
+data_regr <- read_csv("raw_data/data_mod3.csv")  
+
+is_binary <- function(var){
+  return(all(var %in% c(0,1)))
+}
+
+
+
+
+# change strange factor levels to well-behaved ones
+if ("contact" %in% names(data_regr)) data_regr$contact <- dplyr::recode_factor(data_regr$contact, `Self-referral` = "0", `CAMHS referral` = "1")
+
+
+data_regr$responder_3m_f <- factor(data_regr$responder_3m_f, labels = c("negative", "positive"))
+
+
+
+
+data_regr %>% 
+  mutate_if(is_binary, factor) -> data_regr
+
+
+if ("ID" %in% names(data_regr)) data_regr <- data_regr %>% dplyr::select(-ID)  # exclude ID
+
+
+
+
+load(file = "mod_results.Rda")
+
+```
+
+
+``` {r child = 'functions/save_results.Rmd'}
+```
+
+
+# Upfront work
+
+Before I forget: we need to exclude the categorial outcome variable `responder_3m_f`.
+
+```{r exlude_nominal_outcome}
+if ("responder_3m_f" %in% names(data_regr)) {
+  dplyr::select(data_regr, - responder_3m_f) -> data_regr
+  message("responder_3m_f has been excluded from data set.")
+} else message("responder_3m_f was *not* present in data set.")
+
+```
+
+
+
+## CYBOCS_3m
+
+Before starting modelling, it is instructive to visualize (again) the outcome variable. This is particularly true if the outcome variable is some kind of "plastic" (latent/ constructed) variable that lacks a direct connection to physical-biological kinds as it is often the case for questionnaire data.
+
+Histograms with 30, 20, 10 bins:
+
+```{r histograms1}
+ggplot(data_regr, aes(x = CYBOCS_3m)) + geom_histogram(aes(y = ..density..), bins = 30) + geom_density()
+ggplot(data_regr, aes(x = CYBOCS_3m)) + geom_histogram(aes(y = ..density..), bins = 15, alpha = .7) + geom_density()
+ggplot(data_regr, aes(x = CYBOCS_3m)) + geom_histogram(aes(y = ..density..), bins = 10) + geom_density()
+```
+
+Summary statistics:
+```{r sumamary_1}
+summary(data_regr$CYBOCS_3m) %>% tidy %>% kable
+```
+
+
+## split in train vs. test sample
+
+```{r split_sample}
+set.seed(42)
+trainIndex <- createDataPartition(data_regr$CYBOCS_3m, p = .8,
+                                  list = FALSE,
+                                  times = 1)
+
+train_sample <- data_regr[trainIndex, ]
+test_sample <- data_regr[-trainIndex, ]
+
+
+
+predictor_names <- names(train_sample)[names(train_sample) != "CYBOCS_3m"]
+outcome_name <- "CYBOCS_3m"
+
+```
+
+
+# Models
+
+For each model, the model performance reported is always based on the **test** sample (not the *training* sample), unless noted otherwise.
+
+
+## Lasso 80/20
+```{r lasso_function}
+
+do_lasso <- function(data = data_regr, p = .8, save = FALSE){
+
+
+  data_mm <- model.matrix(CYBOCS_3m ~ ., data = data)
+  
+  data_mm <- data_mm[, -1]  #exclude intercept as glmnet demeans the data and reports intercept by default: http://stats.stackexchange.com/questions/99546/2-intercept-cooficients-in-glmnet-output
+  
+  set.seed(42)
+  trainIndex <- createDataPartition(data$CYBOCS_3m, p = p,
+                                    list = FALSE,
+                                    times = 1)
+  
+  train_mm <- data_mm[trainIndex, ]
+  test_mm <- data_mm[-trainIndex, ]
+  
+  train_sample <- data_regr[trainIndex, ]
+  test_sample <- data_regr[-trainIndex, ]
+  
+  
+  message("Do LASSO\n")
+  lasso_cv <- glmnet::cv.glmnet(y = train_sample$CYBOCS_3m,
+                                x = train_mm,
+                                family = "gaussian",
+                                alpha = 1)  # lasso penalty
+  
+  results_lasso <- list()
+  
+  results_lasso$model <- lasso_cv
+  
+  summary(lasso_cv)
+  print(lasso_cv)
+  plot(lasso_cv)
+  
+  coef_lasso <- coef(lasso_cv, s = "lambda.min")
+  coef_lasso
+  
+  results_lasso$coefs <- coef_lasso
+  
+  coef_lasso_num <- as.numeric(coef_lasso)
+  index_coefs_not_zero <- which(coef_lasso_num != 0)
+  names_not_zero <- coef_lasso@Dimnames[[1]][index_coefs_not_zero]
+  values_not_zero <- coef_lasso_num[coef_lasso_num != 0]
+  
+  lasso_coefs_not_zero <- tibble(
+    name = names_not_zero,
+    value = values_not_zero
+  )
+  
+  results_lasso$lasso_coefs_not_zero <- lasso_coefs_not_zero
+  
+  ggplot(lasso_coefs_not_zero, aes(x = name, y = value)) +
+    geom_point() +
+    coord_flip() +
+    ggtitle("Non-zero regression values for Lasso GLM net 80/20 sample") -> p1
+  
+  p1
+  
+  lasso_pred <- predict(lasso_cv, test_mm, s = "lambda.min", type = "response")
+  lasso_pred <- as.numeric(lasso_pred)
+  
+  results_lasso$lasso_pred <- lasso_pred
+
+  pred_obs <- tibble(
+    pred = as.numeric(lasso_pred),
+    obs = as.numeric(test_sample$CYBOCS_3m)
+  )
+  
+  ggplot(pred_obs, aes(x = obs, y = pred)) + 
+    geom_abline(slope = 1, intercept = 0, linetype = "dashed") +
+    geom_point() +
+    xlim(c(0,20)) +
+    ylim(c(0,20)) +
+    ggtitle("Test sample (real) values vs. predicted values") -> p2
+  
+  p2
+  
+  cat(paste("R squared is:", round(R2(pred_obs$pred, pred_obs$obs), 2), "\n"))
+  
+  results_lasso$R2 <- R2(pred_obs$pred, pred_obs$obs)
+  
+  cat(paste("RMSE is:", round(RMSE(pred_obs$pred, pred_obs$obs), 2), "\n"))
+  
+  results_lasso$RMSE <- RMSE(pred_obs$pred, pred_obs$obs)
+  
+  cat(paste("Mean absolute error is:", round(mean(abs(pred_obs$pred - pred_obs$obs)), 2), "\n"))
+  
+  results_lasso$mean_abs_error <- mean(abs(pred_obs$pred - pred_obs$obs))
+
+  if (save == TRUE) {
+    mod_results$lasso_reg_1 <- save_model_results(obj = lasso_cv, 
+                                                  test_df = test_mm, 
+                                                  predict_results = FALSE,
+                                                  report_varimp = FALSE,
+                                                  fit_pred = lasso_pred,
+                                                  conf_matrix = "none")
+  }
+
+  
+  results_lasso$plots[[1]] <- p1
+  results_lasso$plots[[2]] <- p2
+  
+  return(results_lasso)
+}
+
+```
+
+
+```{r lasso1, echo = TRUE}
+
+# undebug(do_lasso)
+# debug(do_lasso)
+lasso_regr_1 <- do_lasso()
+
+lasso_regr_1$plots[[1]]
+lasso_regr_1$plots[[2]]
+
+
+
+```
+
+Let's look at the varimp:
+
+```{r lasso_varimp}
+
+regr_varimp <- list()
+
+lasso_regr_1$lasso_coefs_not_zero %>% 
+  mutate(rank = min_rank(desc(value))) -> regr_varimp$lasso_regr_1
+```
+
+
+## Lasso 60/40
+
+Let's compute the Lasso again but increase the test sample. 20% test sample amounted to 10 observations only. One could speculate that is is too few for numeric stability. Here comes a 60/40 sample split (all other remaining equal).
+
+
+```{r lasso2, echo = TRUE}
+lasso_regr_2 <- do_lasso(p = .6)
+
+lasso_regr_2$plots[[1]]
+lasso_regr_2$plots[[2]]
+
+```
+
+
+Varimp:
+
+```{r lasso2_varimp}
+lasso_regr_2$lasso_coefs_not_zero %>% 
+  mutate(rank = min_rank(desc(value))) -> regr_varimp$lasso_regr_2
+
+```
+
+## Random Forest
+
+```{r prepare_data}
+
+  data_mm <- model.matrix(CYBOCS_3m ~ ., data = data_regr)
+  
+  data_mm <- data_mm[, -1]  #exclude intercept as glmnet demeans the data and reports intercept by default: http://stats.stackexchange.com/questions/99546/2-intercept-cooficients-in-glmnet-output
+  
+  set.seed(42)
+  trainIndex <- createDataPartition(data_regr$CYBOCS_3m, p = .8,
+                                    list = FALSE,
+                                    times = 1)
+  
+  train_mm <- data_mm[trainIndex, ]
+  test_mm <- data_mm[-trainIndex, ]
+  train_sample <- data_regr[trainIndex, ]
+  test_sample <- data_regr[-trainIndex, ]
+
+```
+
+
+```{r compute_rf_1}
+
+control <- trainControl(method="repeatedcv", number=10, repeats=3, search="random")
+
+set.seed(42)
+rf_regr_1 <- train(x = train_mm, 
+                   y = train_sample$CYBOCS_3m,
+                   method = "rf",
+                   importance = TRUE,
+                   tuneLength=15, 
+                   trControl=control,
+                   ntrees = 1000)
+
+```
+
+Let's look at the importance of the variables; the results come from the train sample. But note that RF always predict on the hold-out-sample (test sample). However, we used the number of trees for tuning (`mtry`). That's why we better also look at the performance of the test sample (later).
+
+```{r rf1_varimp}
+rf1_varimp <- varImp(rf_regr_1, scale=FALSE)
+print(rf1_varimp)
+plot(rf1_varimp)
+
+rf1_varimp$importance %>% 
+  rownames_to_column %>% 
+  dplyr::rename(name = rowname, value = Overall) %>% 
+  mutate(rank = min_rank(desc(value))) -> regr_varimp$rf_1
+```
+
+`ADHD` is the most important. `SCAS`, `medication` and `CGI`, and country of birth come next. The rest of the variables appear not so important.
+
+Note that the mean decrease in accuracy is depicted, ie., the MSE if the respective variable would be randomly permutated. [Source](http://topepo.github.io/caret/variable-importance.html)
+
+
+Ok, and now we predict the values of the test sample.
+
+```{r rf1_predicdt}
+rf1_predict <- predict(rf_regr_1, newdata = test_mm)
+rf1_predict
+rf1_RMSE_test <- sqrt(mean((rf1_predict - test_sample$CYBOCS_3m)^2))
+rf1_R2_test <- R2(rf1_predict, test_sample$CYBOCS_3m)
+
+```
+
+RMSE amounts to `r rf1_RMSE_test`; $R^2$ to `r rf1_R2_test`.
+
+
+## SVM
+Let's look at Support Vector Machines (SVM) with radial kernel.
+
+
+```{r SVM1}
+control <- trainControl(method="repeatedcv", number=10, repeats=3, search="random")
+
+set.seed(42)
+svm_regr_1 <- train(x = train_mm, 
+                   y = train_sample$CYBOCS_3m,
+                   method = "svmRadial",
+                   importance = TRUE,
+                   tuneLength=15, 
+                   preProc = c("center", "scale"),
+                   trControl = control, 
+                   savePred = T)
+
+```
+
+
+Here are the model results of the training process (15 tuning steps), sorted by R squared:
+```{r svm_1_results}
+svm_regr_1$results %>% 
+  arrange(desc(Rsquared))
+
+
+svm_regr_1$finalModel
+
+#str(svm_regr_1$finalModel)
+```
+
+The best model in the tuning process was
+
+```{r best_svm}
+svm_regr_1$results %>% 
+  arrange(desc(Rsquared)) %>% 
+  filter(row_number() == 1)
+```
+
+
+
+```{r svm11_varimp}
+svm1_varimp <- varImp(svm_regr_1, scale=FALSE)
+str(svm1_varimp)
+# svm1_varimp2 <- filterVarImp(svm_regr_1)
+print(svm1_varimp)
+plot(svm1_varimp)
+
+
+
+svm1_varimp$importance %>% 
+  rownames_to_column %>% 
+  dplyr::rename(name = rowname, value = Overall) %>% 
+  mutate(rank = min_rank(desc(value))) -> regr_varimp$svm_1
+```
+
+As SVM does not provide a variable importance statistics, here the $R^2$ statistic is presented (for a linear model with one predictor against the Null model).
+
+As can be seen, this model selects a somewhat different array of predictors as being of central concern. `ADHD` is included among the most important ones, but also `SCAS`, `ChOCI` and `EWSASP`.
+
+
+
+Ok, and now we predict the values of the test sample.
+
+```{r svm1_predict}
+svm1_predict <- predict(svm_regr_1, newdata = test_mm)
+svm1_RMSE_test <- sqrt(mean((svm1_predict - test_sample$CYBOCS_3m)^2))
+svm1_R2_test <- R2(svm1_predict, test_sample$CYBOCS_3m)
+
+
+```
+
+RMSE amounts to `r svm1_RMSE_test`; $R^2$ to `r svm1_R2_test`.
+
+
+## Boosting (Stochastic Gradient Boosting)
+
+In ensemble learning such as Boosting, serveral weak learners are combined to yield a more accurate learning ensemble. A particularity of Boosting is that misclassified cases get more weight, so that they are "more closely looked after" in subsequent runs.
+
+```{r}
+control <- trainControl(method="repeatedcv", number=10, repeats=3)
+
+set.seed(42)
+gbm_regr_1 <- train(y = train_sample$CYBOCS_3m,
+                    x = train_mm,
+                    method = "gbm",
+                    # importance = FALSE,
+                    tuneLength=10, 
+                    preProc = c("center", "scale"),
+                    trControl=control
+                    # n.trees = 1000
+                    )
+```
+
+Not sure what the warning message is about.
+
+
+Let's check some results.
+
+```{r}
+gbm_regr_1
+gbm_regr_1$results
+plot(gbm_regr_1)
+```
+
+It appears that fewer boosting iterations lead to better RMSE here. Let's check the best training model:
+
+```{r best_train_model}
+gbm_regr_1$results %>% 
+  arrange(desc(Rsquared)) %>% 
+  filter(row_number() == 1)
+```
+
+
+
+Variample importance:
+
+```{r gbm1_varimp}
+gbm1_varimp <- varImp(gbm_regr_1, scale=FALSE)
+print(gbm1_varimp)
+plot(gbm1_varimp)
+
+
+
+gbm1_varimp$importance %>% 
+  rownames_to_column %>% 
+  dplyr::rename(name = rowname, value = Overall) %>% 
+  mutate(rank = min_rank(desc(value))) -> regr_varimp$gbm_1
+```
+
+Somewhat puzzingly, we again find a somewhat different solution as to the most important variables. `CGI`, `ChOCI`, `distance`, and `CDI` appear to have the most importance. Here, the sum of the boosted iterations (mean decrease in accuracy) are used. Well, in sum, not really telling; better to take it are roughly ordinal...
+
+
+
+
+Ok, and now we predict the values of the test sample.
+
+```{r gbm1_predicdt}
+gbm1_predict <- predict(gbm_regr_1, newdata = test_mm)
+gbm1_RMSE_test <- sqrt(mean((gbm1_predict - test_sample$CYBOCS_3m)^2))
+gbm1_R2_test <- R2(gbm1_predict, test_sample$CYBOCS_3m)
+
+```
+
+RMSE amounts to `r gbm1_RMSE_test`. Slightly better than the model before. $R^2$ amounts to `r gbm1_R2_test`.
+
+
+## Plain regression with univariate feature selection
+
+### Select features (predictors)
+
+This is an implementation of Fabian's way to select features: Run a simple regression with one predictor; repeat for each predictor in the data set. Then choose the "most important" predictors based on the R^2's. Finally run a multiple regression with all "most important" predictors. This procedure basically amounts to looking at (zero-order) correlations of the predictors with the outcome and choosing the predictors having the highest correlation with the outcome. Note that here bivariate assocations only are looked at. No correction is undertaken for "overlapping" correlations.
+
+```{r regr_univariate_selection}
+
+train_sample %>% 
+  dplyr::select(-CYBOCS_3m) %>% 
+  map(~lm(train_sample$CYBOCS_3m ~ .x, data = train_sample)) %>% 
+  map(summary) %>% 
+  map_dbl("r.squared") %>% 
+  tidy %>% 
+  dplyr::arrange(desc(x)) %>% 
+  dplyr::rename(r.squared = x) %>% 
+  kable
+
+
+```
+
+
+We could also argue that, FWIW, we would want to guide our predictor (feature) selection by significance of p-values. At the least, this gives us simple guidance as to which variables to retain. Let's see:
+
+```{r}
+train_sample %>% 
+  dplyr::select(-CYBOCS_3m) %>% 
+  map(~lm(train_sample$CYBOCS_3m ~ .x, data = train_sample)) %>% 
+  map(summary) %>% 
+  map("coefficients") %>% 
+  map_dbl(8) %>% 
+  tidy %>% 
+  dplyr::rename(pvalue = x) %>% 
+  dplyr::arrange(pvalue)  -> univariate_lm_selection
+
+
+# rename(p.value = x)
+
+  kable(univariate_lm_selection)
+```
+
+According to this reasoning, we should retain the following variables (p < .05):
+
+
+```{r lm1_signif_prdictors}
+univariate_lm_selection %>% 
+  filter(pvalue < .05) -> univariate_lm_selection_signif
+  
+kable(univariate_lm_selection_signif)
+```
+
+In sum, `r nrow(univariate_lm_selection_signif)` variables were chosen. 
+
+However, I doubt that this procedure is the most advisable.
+
+
+### Run regression with univariate predictor selection
+
+```{r lm1_results}
+
+train_sample %>% 
+  dplyr::select(one_of(univariate_lm_selection_signif$names)) -> train_sample_univar_signif
+
+lm(train_sample$CYBOCS_3m ~ . , data = train_sample_univar_signif) -> lm1
+  
+
+lm1 %>% 
+  summary %>% 
+  tidy %>% 
+  mutate_if(is.numeric, round, digits = 2) %>% 
+  kable
+
+
+```
+
+
+Let's have a look at the predictors which reached statistical significance:
+
+```{r lm1_results_signif_only}
+lm1 %>% 
+  summary %>% 
+  tidy %>% 
+  filter(p.value < .05) %>% 
+  mutate_if(is.numeric, round, digits = 2) %>% 
+  kable
+
+```
+
+
+Adjusted $R^2$ of the TRAIN sample is:
+
+```{r}
+summary(lm1)$adj.r.squared
+```
+
+
+Let's take the ajusted R squared of the test sample with one predictor as the variable importance of that predictor.
+
+```{r lm1_varimp}
+
+tibble(
+  name = "ADHD1",
+  value = summary(lm1)$adj.r.squared,
+  rank = min_rank(desc(value))
+) -> regr_varimp$lm1
+
+svm1_varimp$importance %>% 
+  rownames_to_column %>% 
+  dplyr::rename(name = rowname, value = Overall) %>% 
+  mutate(rank = min_rank(desc(value))) -> regr_varimp$svm_1
+
+```
+
+
+Now let's see the predictive accuracy using the TEST sample.
+
+
+```{r predict_lm1}
+
+lm1_predict <- predict((lm1), newdata = test_sample)
+# str(lm1_predict)
+summary(lm1_predict)
+  
+R2_lm1 <- R2(lm1_predict, test_sample$CYBOCS_3m)  
+RMSE_lm_uni_Model2 <- RMSE(lm1_predict, test_sample$CYBOCS_3m)
+```
+
+Here, the $R^2$ is `r round(R2_lm1, 2)`; the RMSE is `r round(RMSE_lm_uni_Model2, 2)`.
+
+
+## Stepwise Linear Model
+
+Let's try `leap::regsubsets` with forward selection. Max. nr. of predictors to be included: 10. 
+
+### Select predictors
+```{r lm_stepwise}
+library(leaps)
+lm2 <- regsubsets(CYBOCS_3m ~ . , data = train_sample,
+                      nvmax = 10, 
+                      method = "forward")
+
+lm2_summary <- summary(lm2)
+lm2_summary
+```
+
+
+So let's look which variables have been included to the models (starting with 1 predictor to a model with 10 predictors):
+
+
+```{r}
+for (i in 1:10) {
+  cat(paste("***Model with ",i," predictor(s)***\n", paste = ""))
+  print(coef(lm2, i))
+}
+```
+
+Ok, but which model (ie, with what number of predictors) should we choose?
+
+Let's look at *adjusted* $R^2$.
+
+```{r}
+plot(lm2_summary$adjr2, type = "l")
+nr_predictors <- which.max(lm2_summary$adjr2)
+points(nr_predictors, lm2_summary$adjr2[nr_predictors], col = "red", cex = 2, pch = 20)
+```
+
+That is, the model suggests `r nr_predictors` predictors to be included.
+
+Let's look at $BIC$.
+
+```{r}
+plot(lm2_summary$bic, type = "l")
+nr_predictors <- which.min(lm2_summary$bic)
+points(nr_predictors, lm2_summary$bic[nr_predictors], col = "red", cex = 2, pch = 20)
+```
+
+
+That is, the model suggests `r nr_predictors` predictors to be included.
+
+
+$BIC$ is more strict in terms of allowing predictors to enter the model. So let's look finally to $C_p$:
+
+
+```{r}
+plot(lm2_summary$cp, type = "l")
+nr_predictors <- which.min(lm2_summary$cp)
+points(nr_predictors, lm2_summary$cp[nr_predictors], col = "red", cex = 2, pch = 20)
+```
+
+
+That is, the model suggests `r nr_predictors` predictors to be included.
+
+Ok, so let's stick to `r nr_predictors` predictors. These are:
+
+```{r}
+coef(lm2, nr_predictors)[-1]
+best_preds <- names(coef(lm2, nr_predictors))[-1]  # first is "intercept"
+
+if ("ADHD1" %in% best_preds) best_preds[best_preds == "ADHD1"] <- "ADHD"
+```
+
+Run model with best predictor subset to get all typical statistics.
+
+```{r lm_regr_subsets_best_preds}
+
+
+
+train_sample %>% 
+  dplyr::select(one_of(best_preds)) %>% 
+  do(tidy(lm(train_sample$CYBOCS_3m ~ ., data = .))) -> lm2_bestsub
+
+lm2_bestsub %>% 
+  filter(term != "(Intercept)") %>% 
+  dplyr::select(term, statistic) %>% 
+  dplyr::rename(name = term, value = statistic) %>% 
+  mutate(rank = min_rank(desc(value))) -> regr_varimp$lm2_bestsub
+
+
+
+```
+
+
+
+### Predict values
+
+Now let's see the predictive accuracy using the TEST sample.
+
+
+```{r predict_lm2}
+
+predict.regsubsets = function(object, newdata, id, ...) {
+        form  <-  as.formula(~.)
+        mat  <-  model.matrix(form, newdata)
+        coefi  <-  coef(object, id)
+        xvars  <-  names(coefi)
+        mat[, xvars] %*% coefi
+}  # credit to: https://github.com/yufree/democode/blob/master/rml/predict.regsubsets.R
+
+lm2_predict <- predict(lm2, newdata = test_sample, id = nr_predictors)
+# str(dummy_model2)
+summary(lm2_predict)
+  
+R2_lm2 <- R2(lm2_predict, test_sample$CYBOCS_3m)  
+RMSE_lm2 <- RMSE(lm2_predict, test_sample$CYBOCS_3m)
+```
+
+Here, the $R^2$ is `r round(R2_lm2, 2)`; the RMSE is `r round(RMSE_lm2, 2)`.
+
+
+
+
+# Comparison of model results
+
+```{r compute_model_comparison}
+
+regr_results <- tibble(
+  RMSE_models = c(lasso_regr_1$RMSE, lasso_regr_2$RMSE, rf1_RMSE_test, svm1_RMSE_test, gbm1_RMSE_test, RMSE_lm_uni_Model2, RMSE_lm2),
+  R2_models = c(lasso_regr_1$R2, lasso_regr_2$R2, rf1_R2_test, svm1_R2_test, gbm1_R2_test, R2_lm1, R2_lm2),
+  name_models = c("Lasso_1", "Lasso_2", "RF", "SVM", "GBM", "LM_uni", "LM_regsubsets")
+)
+
+regr_results %>% 
+  dplyr::select(name_models, R2_models, RMSE_models) %>% 
+  dplyr::rename(`name of model` = name_models, `Rsquared` = R2_models, RMSE = RMSE_models) %>% 
+  mutate_if(is.numeric, round, digits = 2) %>% 
+  kable
+
+
+```
+
+
+The results in sum indicate that the Boosting model is the by far best. Let's look again at the predictors which are thought to be the most important according to this model.
+
+```{r}
+print(gbm1_varimp)
+plot(gbm1_varimp)
+
+```
+
+
+After the first 5 predictors there curve appears to flatten down (like a "scree"). Following this reasoning, let's extract the 5 most important predictors.
+
+Ok, that could be message: Boosting appears to work, and we have thus identified some variables which appear predictive for the outcome.
+
+
+# Evaluating variable importance
+
+Finally, let's combine model results to derive the importance of variables after having fitted all these models.
+
+
+Put the list elements with the var.imp. data in one data frame:
+
+```{r varimp_all}
+do.call("rbind", regr_varimp) %>% 
+  rownames_to_column %>% 
+  dplyr::rename(model = rowname) %>% 
+  filter(name != "(Intercept)") -> varimp_all
+
+
+kable(varimp_all)
+```
+
+
+But as only Boosting and RF were successful, let's only consider the variables from those models.
+
+```{r varimp_all_boost_rf}
+
+varimp_all %>% 
+  filter(str_detect(model, "gbm")) %>% 
+  top_n(-10) -> varimp_gbm
+
+kable(varimp_gbm)
+
+
+varimp_all %>% 
+  filter(str_detect(model, "rf")) %>% 
+  top_n(-10) -> varimp_rf
+  
+  
+kable(varimp_rf)
+
+```
+
+What predictors appear in both "hit lists"?
+
+```{r varimp_intersect}
+
+base::intersect(varimp_gbm$name, varimp_rf$name) -> varimp_intersect
+
+varimp_intersect
+```
+
+These are the variables that where among the 10 most important predictors in both (best performing) models. Let's take them as our "best guess" as the most important ones.
