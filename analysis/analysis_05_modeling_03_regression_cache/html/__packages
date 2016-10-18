@@ -1,5 +1,6 @@
 base
 knitr
+stringr
 dplyr
 corrr
 purrr
@@ -25,4 +26,3 @@ survival
 gbm
 plyr
 leaps
-stringr

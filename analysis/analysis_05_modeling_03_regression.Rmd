@@ -62,12 +62,21 @@ mod_results_regression <- list()
 
 # overhead
 write_to_file <- FALSE
-recompute <- FALSE
-test_it <- FALSE
 registerDoMC(cores = 4)
 
 
 ```
+
+
+Play or work (test it and recompute vs. rely on cached data)
+
+```{r play_or_work, echo = TRUE}
+recompute <- TRUE
+test_it <- FALSE
+```
+
+
+
 
 
 ```{r paths}
@@ -108,6 +117,9 @@ load(file = "mod_results.Rda")
 ```
 
 
+The dimensions of the data set is `r dim(data_regr)` (rows/cols).
+ 
+
 ``` {r child = 'functions/save_results.Rmd'}
 ```
 
@@ -128,7 +140,7 @@ if ("responder_3m_f" %in% names(data_regr)) {
 
 ## CYBOCS_3m
 
-Before starting modelling, it is instructive to visualize (again) the outcome variable. This is particularly true if the outcome variable is some kind of "plastic" (latent/ constructed) variable that lacks a direct connection to physical-biological kinds as it is often the case for questionnaire data.
+Before starting modelling, it is instructive to visualize (again) the outcome variable (numeric). This is particularly true if the outcome variable is some kind of "plastic" (latent/ constructed) variable that lacks a direct connection to physical-biological kinds as it is often the case for questionnaire data.
 
 Histograms with 30, 20, 10 bins:
 
