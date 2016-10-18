@@ -19,7 +19,7 @@ library(knitr)
 opts_knit$set(root.dir=normalizePath('../'))
 
 knitr::opts_chunk$set(echo = TRUE, 
-                      cache = TRUE, 
+                      cache = FALSE, 
                       warning = FALSE, 
                       message = FALSE)
 ```
@@ -55,21 +55,26 @@ mod_results <- list()
 
 
 # overhead
-write_to_file <- FALSE
-recompute <- FALSE
 test_it <- FALSE
 registerDoMC(cores = 4)
 
-
-# project wd
 ```
+
+
+Define caching-/write-to-disc variables
+
+
+```{r play_or_work}
+write_to_file <- TRUE
+recompute <- TRUE
+```
+
+
+
 
 Define paths (data, code, output, etc.).
 ```{r paths}
-# PROJHOME that's the project home folder; same as R Project working dir
 
-
-#paths_file <- file.path(PROJHOME, "analysis/functions", "paths.R")  # for knitr
 
 source("analysis/functions/paths.R")
 ```
@@ -183,13 +188,11 @@ train_sample <- data_class[trainIndex, ]
 test_sample <- data_class[-trainIndex, ]
 
 
-test_y_relevel <- relevel(test_sample$responder_3m_f, ref  = "1")
-train_y_relevel <- relevel(train_sample$responder_3m_f, ref  = "1")
 
 
 
 lasso_cv <- glmnet::cv.glmnet(x = train_mm, 
-                        y = train_y_relevel, 
+                        y = train_sample$responder_3m_f, 
                         family = "binomial",
                         alpha = 1)
 ```
@@ -240,7 +243,7 @@ lasso_pred
 Put together in a confusion matrix:
 
 ```{r lasso_confusion_matrix}
-lasso_conf <- confusionMatrix(lasso_pred, test_y_relevel)
+lasso_conf <- confusionMatrix(lasso_pred, test_sample$responder_3m_f)
 lasso_conf
 
 #debug(save_model_results)
@@ -696,7 +699,7 @@ So out of all predictors, it appears that only few are statistically significant
 
 ```{r signif_preds}
 data_class %>% 
-  select(one_of(num_preds)) %>% 
+  dplyr::select(one_of(num_preds)) %>% 
   na.omit() %>% 
   map(~t.test(. ~ data_class$responder_3m_f)$p.value) %>% 
   as.data.frame %>% 
@@ -777,7 +780,7 @@ data_class_effsize %>%
   geom_hline(yintercept = 50, alpha = .4) +
   geom_point(aes(shape = sign)) + 
   coord_flip() +
-  ylab("effect size (Common Language d) with 95% CI") +
+  ylab("effect size (Common Language Effect Size) with 95% CI") +
   xlab("predictor") + 
   ggtitle("B") -> es_plot_2
 
@@ -793,45 +796,6 @@ Both plots together:
 grid.arrange(es_plot_1, es_plot_2)
 ```
 
-
-## Assocation of predictors with numeric outcome variable `CYBOCS_3m`
-
-Now let's look at something similar: The association of the (numeric) predictors with the numeric outcome variable
-
-```{r}
-data_class %>% 
-  select_if(is.numeric) %>% 
-  correlate %>% 
-  focus(CYBOCS_3m) %>% 
-  arrange(desc(abs(CYBOCS_3m))) %>% print(n=32)
-
-```
-Hey, that looks quite promising!
-
-Let's finally plot it:
-
-
-
-```{r plot_assocation_predictors_cybocs3m}
-
-data_rect <- data.frame(xmin = -Inf, xmax = Inf, ymin = -.1, ymax = .1)
-
-
-data_class %>% 
-  select_if(is.numeric) %>% 
-  correlate  %>% 
-  focus(CYBOCS_3m) %>% 
-  arrange(desc(abs(CYBOCS_3m))) %>% print(n=32) %>% 
-  ggplot(aes(x = reorder(rowname, abs(CYBOCS_3m)), y = CYBOCS_3m)) + geom_point() +
-  coord_flip() +
-  xlab("predictor") +
-  ylab("Correlation with CYBOCS_3m") +
-  # ggtitle("Correlations of predictors with outcome (CYBOCS_3m)") +
-  geom_hline(yintercept = 0, linetype = "dashed")  +
-  geom_rect(data = data_rect, 
-           aes(ymin = ymin, ymax = ymax, xmin = xmin, xmax = xmax), inherit.aes = FALSE, alpha = .3, fill = "red", color = "red")
-
-```
 
 Don't forget to save results to disk...
 

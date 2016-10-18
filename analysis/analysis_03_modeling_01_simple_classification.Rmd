@@ -16,11 +16,6 @@ output:
 
 cat("***starting\n***")
 
-knitr::opts_chunk$set(echo = TRUE, 
-                      cache = TRUE, 
-                      warning = FALSE, 
-                      message = FALSE)
-
 
 
 library(doMC)  # multiple cores
@@ -35,6 +30,18 @@ library(caret) # modeling
 library(ggplot2) # plotting
 library(tibble) # tibble
 library(dplyr) # data wrangling
+
+
+
+knitr::opts_chunk$set(echo = TRUE, 
+                      cache = TRUE, 
+                      warning = FALSE, 
+                      message = FALSE)
+
+knitr::opts_knit$set(root.dir=normalizePath('../'))
+
+
+
 
 
 # results/ variables
@@ -54,21 +61,16 @@ registerDoMC(cores = 4)
 We load the data that has been prepared in the previous step. Dimension of the dataset (r/c):
 
 ```{r read_data}
-data_class <- read_csv("../raw_data/data_mod3.csv")
+data_class <- read_csv("raw_data/data_mod3.csv")
 data_class$responder_3m_f <- factor(data_class$responder_3m_f)
 dim(data_class)
-```
-
-
-Project directory should be "/analysis"; project directory is:
-```{r}
-getwd()
 ```
 
 ```{r fnction_test_results, child = 'functions/save_results.Rmd'}
 ```
 
 
+The dimensions of the data frame is `r dim("data_mod3.csv")`.
 
 # Basic classification (dichotomous outcome)
 
@@ -80,7 +82,7 @@ Before I forget: we need to exclude the metric outcome variable `CYBOCS_3m`.
 ```{r child = "functions/exclude_CYBOCS_3M.Rmd"}
 ```
 
-Numer of columns in `data_class`: `r ncol(data_class)`.
+Number of columns in `data_class`: `r ncol(data_class)`.
 
 
 ```{r child  = "functions/test_split_data.Rmd"}

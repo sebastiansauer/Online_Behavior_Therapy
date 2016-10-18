@@ -7,7 +7,7 @@ output:
     toc: yes
     toc_depth: 3
     number_sections: true
-    code_foling: hide
+    code_folding: hide
 ---
 
 
@@ -23,7 +23,7 @@ library(knitr)
 opts_knit$set(root.dir=normalizePath('../'))
 
 knitr::opts_chunk$set(echo = TRUE, 
-                      cache = TRUE, 
+                      cache = FALSE, 
                       warning = FALSE, 
                       message = FALSE)
 ```
@@ -40,8 +40,9 @@ library(knitr) # rmarkdown
 library(tidyr) # tidying objects
 library(caret) # modeling
 library(ggplot2) # plotting
-#library(tibble) # tibble
+library(tibble) # tibble
 library(dplyr) # data wrangling
+library(purrr)  # functional programming
 
 
 
@@ -81,6 +82,7 @@ Include:
 - CYBOCS (all)
 - CGI_S_pre
 - symptoms: Checking, Obsessions, contamination und symmetry
+- treatment experience, including prior experience with CBT
 
 Exclude:
 
@@ -133,7 +135,8 @@ prep_data <- function(data_file = path_file_data, learning_type = "classificatio
 
   nzv_vars <- data_nzv$rowname
 
-
+##### select variables for the analysis ######
+  
   data %>%
     dplyr::select(dplyr::matches("sum|CYBOCS"),  # sumscores of scales *OR* CYBOCS
                   Depression:numberdiagnos,  # comorbidity
@@ -142,6 +145,7 @@ prep_data <- function(data_file = path_file_data, learning_type = "classificatio
                   CGI_S_pre,  # clincial rating of symptoms
                   checking, obsessions, contamination, symmetry, # symptoms
                   ID,
+                  CBT_OCD,  # priot experience to OCD treatment via CBT
                   -one_of(nzv_vars)) ->  # exclude nzv variables
     data_mod
 
@@ -168,21 +172,17 @@ How many missings do we have?
 ```{r check_NA}
 data_mod %>% select_if(function(col) sum(is.na(col)) != 0) %>% names
 
-
+library(pander)
 data_mod %>% 
   select_if(function(col) sum(is.na(col)) != 0) %>% 
   summarise_each(funs(sum(is.na(.)))) %>% 
-  kable
+  pander
+
+# yo
 ```
 
-Oh no! Some NA's in our outcome variable, that's is a sad story. That reduces the sample size (for classification). We could impute, but let's forget that for now. Ok, then be hard better now than later. At least the 5 missings occur in both variables for the same cases. Good bye, guys.
+Oh no! Some NA's in our outcome variable, that's is a sad story. That reduces the sample size (for classification). We could impute, or we could delete those cases. At least the 5 missings occur in both variables for the same cases. 
 
-```{r exclude_NA_cybocs_3m}
-data_mod %>% 
-  filter(!is.na(responder_3m_f), !is.na(CYBOCS_3m)) -> data_mod
-```
-
-The dimension of our data set is now `r dim(data_mod)`.
 
 Let's quickly double check whether those cases are missing for the numeric outcome variable, too (this should be the case.)
 
@@ -197,30 +197,46 @@ data_mod %>%
 ```
 
 
+Let's try to impute and see what happens.
+
+```{r exclude_NA_cybocs_3m}
+# data_mod %>% 
+#  filter(!is.na(responder_3m_f), !is.na(CYBOCS_3m)) -> data_mod
+```
+
+
 Ok, so that makes sense. Five cases are not ours to see.
+
+
+
+The dimension of our data set is now `r dim(data_mod)`.
+
 
 ## NAs in predictors
 
 What about the rest of the variables with NAs? 
 
-There are some variables with a lot of NA. Cure appears difficult. Better omit these variables. Here come the culprits:
+There are some variables with a lot of NA. Cure appears difficult. One way, and a sensible way, would be to exclude the culprits. Here they come:
 
 ```{r, echo = TRUE}
 data_mod %>% 
   dplyr::select_if(function(col) sum(is.na(col)) >= 10) %>% names
 ```
 
-Adios, guys:
+
 
 ```{r}
-data_mod %>% 
-  dplyr::select_if(function(col) sum(is.na(col)) < 10) -> data_mod
+# data_mod %>% 
+#  dplyr::select_if(function(col) sum(is.na(col)) < 10) -> data_mod
 ```
+
+Alternatively, we could argue that better retaining a little information than none at all, so let's try to keep it.
+
 
 Now the dimension of our data set is: `r dim(data_mod)`.
 
 
-Any missings left?
+So how many missings do we have again?
 
 ```{r}
 data_mod %>% 
@@ -229,7 +245,7 @@ data_mod %>%
   kable
 ```
 
-Yes, some. Let's impute them.
+Let's impute them.
 
 
 ## Impute missing values
@@ -244,7 +260,7 @@ md.pattern(data_mod)
 data_mod_MI <- mice(data_mod)
 data_mod_imp <- mice::complete(data_mod_MI, 1)
 # setwd(path_data)
-if (write_to_file == TRUE) write_csv(data_mod_imp, path = "data_mod2.csv")
+if (write_to_file == TRUE) write_csv(data_mod_imp, path = "raw_data/data_mod2.csv")
 # data_mod2 <- read_csv("data_mod2.csv")
 data_mod2 <- data_mod_imp
 
@@ -331,8 +347,10 @@ data_mod3 <- model.matrix(~ ., data = data_mod2)
 data_mod3 %>% data.frame -> data_mod3
 
 data_mod3 %>% 
-    nearZeroVar(., saveMetrics = TRUE) %>% 
-    kable
+  nearZeroVar(saveMetrics = TRUE)  %>% 
+  rownames_to_column %>% 
+  filter(nzv == TRUE) %>% 
+  kable
 
 data_mod3 %>% 
     nearZeroVar -> sparse_vars
@@ -341,6 +359,15 @@ names(data_mod3)[sparse_vars]
 
 
 ```
+
+Let's look at the distributions of the nzv variables.
+
+```{r}
+data_mod3 %>% 
+  select(one_of(names(data_mod3)[sparse_vars])) %>% 
+  map(~table(.))
+```
+
 
 Then let's *exclude* the NZV variables.
 
@@ -384,7 +411,8 @@ The factor variables with sparse levels (now excluded) are:
 names(data_mod3)[sparse_vars]
 ```
 
-The remaining number of cols is: `r ncol(data_mod3)`.
+The remaining number of *cols* is: `r ncol(data_mod3)`.
+The remaining number of *rows* is: `r nrow(data_mod3)`.
 
 ```{r}
 cat("This is the end\n")

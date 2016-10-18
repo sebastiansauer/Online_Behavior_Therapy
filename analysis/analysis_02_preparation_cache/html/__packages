@@ -12,3 +12,4 @@ ggplot2
 caret
 dplyr
 testthat
+pander

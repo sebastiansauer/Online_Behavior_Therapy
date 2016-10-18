@@ -35,6 +35,51 @@ sum3
 
 
 
+## Assocation of predictors with numeric outcome variable `CYBOCS_3m`
+
+Now let's look at something similar: The association of the (numeric) predictors with the numeric outcome variable
+
+```{r}
+data_class %>%
+select_if(is.numeric) %>%
+correlate %>%
+focus(CYBOCS_3m) %>%
+arrange(desc(abs(CYBOCS_3m))) %>% print(n=32)
+
+```
+Hey, that looks quite promising!
+
+Let's finally plot it:
+
+
+
+  ```{r plot_assocation_predictors_cybocs3m}
+
+data_rect <- data.frame(xmin = -Inf, xmax = Inf, ymin = -.1, ymax = .1)
+
+
+data_class %>%
+  select_if(is.numeric) %>%
+  correlate  %>%
+  focus(CYBOCS_3m) %>%
+  arrange(desc(abs(CYBOCS_3m))) %>% print(n=32) %>%
+  ggplot(aes(x = reorder(rowname, abs(CYBOCS_3m)), y = CYBOCS_3m)) + geom_point() +
+  coord_flip() +
+  xlab("predictor") +
+  ylab("Correlation with CYBOCS_3m") +
+  # ggtitle("Correlations of predictors with outcome (CYBOCS_3m)") +
+  geom_hline(yintercept = 0, linetype = "dashed")  +
+  geom_rect(data = data_rect,
+            aes(ymin = ymin, ymax = ymax, xmin = xmin, xmax = xmax), inherit.aes = FALSE, alpha = .3, fill = "red", color = "red")
+
+```
+
+
+
+
+
+
+
 add_na_col <- function(x){
    mutate(x, na = 0)
 }
