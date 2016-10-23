@@ -672,14 +672,14 @@ test &lt;- data_mod2[-trainIndex, ]</code></pre>
 </tr>
 <tr class="odd">
 <td>CYBOCS_pre_insight</td>
-<td align="right">1.227273</td>
+<td align="right">1.400000</td>
 <td align="right">6.557377</td>
 <td align="left">FALSE</td>
 <td align="left">FALSE</td>
 </tr>
 <tr class="even">
 <td>CYBOCS_pre_avoid</td>
-<td align="right">1.411765</td>
+<td align="right">1.277778</td>
 <td align="right">6.557377</td>
 <td align="left">FALSE</td>
 <td align="left">FALSE</td>
@@ -756,7 +756,7 @@ test &lt;- data_mod2[-trainIndex, ]</code></pre>
 </tr>
 <tr class="odd">
 <td>CYBOCS_3m</td>
-<td align="right">1.333333</td>
+<td align="right">1.400000</td>
 <td align="right">34.426229</td>
 <td align="left">FALSE</td>
 <td align="left">FALSE</td>
@@ -847,14 +847,14 @@ test &lt;- data_mod2[-trainIndex, ]</code></pre>
 </tr>
 <tr class="even">
 <td>OCDonset</td>
-<td align="right">1.000000</td>
+<td align="right">1.200000</td>
 <td align="right">21.311475</td>
 <td align="left">FALSE</td>
 <td align="left">FALSE</td>
 </tr>
 <tr class="odd">
 <td>yearswithOCD</td>
-<td align="right">1.250000</td>
+<td align="right">1.076923</td>
 <td align="right">19.672131</td>
 <td align="left">FALSE</td>
 <td align="left">FALSE</td>
@@ -903,7 +903,7 @@ test &lt;- data_mod2[-trainIndex, ]</code></pre>
 </tr>
 <tr class="even">
 <td>responder_3m_f</td>
-<td align="right">1.652174</td>
+<td align="right">1.346154</td>
 <td align="right">3.278688</td>
 <td align="left">FALSE</td>
 <td align="left">FALSE</td>
@@ -952,20 +952,26 @@ test &lt;- data_mod2[-trainIndex, ]</code></pre>
 </tr>
 </tbody>
 </table>
-<p>In order to identify sparse nominal (factor) variables, we should first dummy-code them. Here is the list of sparse variables.</p>
+<p>In order to identify sparse nominal (factor) variables, we should first dummy-code them.</p>
 <pre class="r"><code>data_mod3 &lt;- model.matrix(~ ., data = data_mod2)
 
 data_mod3 %&gt;% data.frame -&gt; data_mod3
 
-data_mod3 %&gt;% 
+attr(data_mod3, &quot;sparse_vars_excluded&quot;) &lt;- FALSE</code></pre>
+<p>Now the data frame has been turned into a model.matrix (ie., all factor variables are now dummy-coded ie., binary). The number of variables (columns) is now: 56. Note that the <code>x.intercept</code> variable is an artefact by the <code>model.matrix</code> function, but should be exluded nonetheless.</p>
+<p>Let’s check how many sparse variables are identified.</p>
+<pre class="r"><code>data_mod3 %&gt;% 
   nearZeroVar(saveMetrics = TRUE)  %&gt;% 
   rownames_to_column %&gt;% 
-  filter(nzv == TRUE) %&gt;% 
+  filter(nzv == TRUE) %&gt;%
+  dplyr::rename(predictor = rowname) -&gt; nzv_df
+
+nzv_df %&gt;% 
   kable</code></pre>
 <table>
 <thead>
 <tr class="header">
-<th align="left">rowname</th>
+<th align="left">predictor</th>
 <th align="right">freqRatio</th>
 <th align="right">percentUnique</th>
 <th align="left">zeroVar</th>
@@ -1039,21 +1045,13 @@ data_mod3 %&gt;%
 </tbody>
 </table>
 <pre class="r"><code>data_mod3 %&gt;% 
-    nearZeroVar -&gt; sparse_vars
+    nearZeroVar -&gt; sparse_vars_idx
 
-names(data_mod3)[sparse_vars]</code></pre>
-<pre><code>## [1] &quot;X.Intercept.&quot;                       
-## [2] &quot;BirthcountryOther.european&quot;         
-## [3] &quot;Education_parentDoctoral.degree&quot;    
-## [4] &quot;Education_parentPrimary&quot;            
-## [5] &quot;Education_parentVocational&quot;         
-## [6] &quot;medicationcomb.SSRI.and.CS&quot;         
-## [7] &quot;medicationtricyclic.antidepressives&quot;
-## [8] &quot;treatm_expCAMHS.dynamic&quot;            
-## [9] &quot;OCD_treatm_expgeneral.councelling&quot;</code></pre>
+names(data_mod3)[sparse_vars_idx] -&gt; sparse_vars</code></pre>
+<p>In sum, the number of sparse variables is 9.</p>
 <p>Let’s look at the distributions of the nzv variables.</p>
 <pre class="r"><code>data_mod3 %&gt;% 
-  select(one_of(names(data_mod3)[sparse_vars])) %&gt;% 
+  select(one_of(sparse_vars)) %&gt;% 
   map(~table(.))</code></pre>
 <pre><code>## $X.Intercept.
 ## .
@@ -1099,9 +1097,11 @@ names(data_mod3)[sparse_vars]</code></pre>
 ## .
 ##  0  1 
 ## 60  1</code></pre>
-<p>Then let’s <em>exclude</em> the NZV variables.</p>
+<p>Is is evident that binary variables with factors where n is only 1, 2 or 3 cannot be of use. Then let’s <em>exclude</em> the NZV variables.</p>
 <pre class="r"><code>data_mod3 %&gt;% 
-  dplyr::select(-sparse_vars) -&gt; data_mod3</code></pre>
+  dplyr::select(-sparse_vars_idx) -&gt; data_mod3
+
+attr(data_mod3, &quot;sparse_vars_excluded&quot;) &lt;- TRUE</code></pre>
 <p>Maybe we better exlude the variable <code>ID</code>.</p>
 <pre class="r"><code>data_mod3 %&gt;% 
   select(-ID) -&gt; data_mod3</code></pre>
@@ -1112,12 +1112,16 @@ names(data_mod3)[sparse_vars]</code></pre>
 <pre class="r"><code># setwd(path_data)
 if (write_to_file == TRUE) write_csv(data_mod3, path = &quot;raw_data/data_mod3.csv&quot;)</code></pre>
 <p>The factor variables with sparse levels (now excluded) are:</p>
-<pre class="r"><code>names(data_mod3)[sparse_vars]</code></pre>
-<pre><code>## [1] &quot;CYBOCS_pre_OBS&quot;              &quot;Education_parentHigh.school&quot;
-## [3] &quot;Education_parentUniversity&quot;  &quot;contactSelf.referral&quot;       
-## [5] &quot;medicationnone&quot;              &quot;OCD_treatm_expnone&quot;         
-## [7] &quot;checking&quot;                    &quot;symmetry&quot;                   
-## [9] NA</code></pre>
+<pre class="r"><code>sparse_vars</code></pre>
+<pre><code>## [1] &quot;X.Intercept.&quot;                       
+## [2] &quot;BirthcountryOther.european&quot;         
+## [3] &quot;Education_parentDoctoral.degree&quot;    
+## [4] &quot;Education_parentPrimary&quot;            
+## [5] &quot;Education_parentVocational&quot;         
+## [6] &quot;medicationcomb.SSRI.and.CS&quot;         
+## [7] &quot;medicationtricyclic.antidepressives&quot;
+## [8] &quot;treatm_expCAMHS.dynamic&quot;            
+## [9] &quot;OCD_treatm_expgeneral.councelling&quot;</code></pre>
 <p>The remaining number of <em>cols</em> is: 46. The remaining number of <em>rows</em> is: 61.</p>
 <pre class="r"><code>cat(&quot;This is the end\n&quot;)</code></pre>
 <pre><code>## This is the end</code></pre>

@@ -19,16 +19,21 @@ Setup knitr.
 ```{r setup, include=FALSE}
 
 message("***starting\n***")
-
 library(knitr)
-opts_knit$set(root.dir=normalizePath('../'))
 
-knitr::opts_chunk$set(echo = TRUE, 
-                      cache = TRUE, 
-                      warning = FALSE, 
-                      message = FALSE)
 ```
 
+
+```{r knitr_opts}
+
+opts_knit$set(root.dir=normalizePath('../'))
+
+
+knitr::opts_chunk$set(echo = TRUE,
+                      cache = FALSE,
+                      warning = FALSE,
+                      message = FALSE)
+```
 
 
 Load packages, define overhead.
@@ -38,26 +43,13 @@ Load packages, define overhead.
 
 
 
-library(stringr)
-library(corrr)
-library(purrr)
-library(doMC)
-library(pscl)  # pseudo R^2
-library(magrittr) # piping
-library(mice)  # imputation
-library(testthat)  # testing
-library(readr) # csv import
-library(knitr) # rmarkdown
-library(tidyr) # tibbling objects
-library(caret) # modeling
-library(ggplot2) # plotting
-library(tibble) # tibble
-library(dplyr) # data wrangling
-library(broom)
+source("analysis/functions/load_libs.R")
 
 
 # results/ variables
 mod_results_regression <- list()
+regr_varimp <- list()  # var.imp only
+
 
 
 # overhead
@@ -120,7 +112,8 @@ load(file = "mod_results.Rda")
 The dimensions of the data set is `r dim(data_regr)` (rows/cols).
  
 
-``` {r child = 'functions/save_results.Rmd'}
+``` {r save_model_results}
+source("analysis/functions/save_model_results.R")
 ```
 
 
@@ -154,6 +147,48 @@ Summary statistics:
 ```{r sumamary_1}
 summary(data_regr$CYBOCS_3m) %>% tidy %>% kable
 ```
+
+
+
+## Assocation of predictors with numeric outcome variable `CYBOCS_3m`
+
+Now let's look at something similar: The association of the (numeric) predictors with the numeric outcome variable
+
+```{r}
+data_regr %>%
+select_if(is.numeric) %>%
+correlate %>%
+focus(CYBOCS_3m) %>%
+arrange(desc(abs(CYBOCS_3m))) %>% print(n=32)
+
+```
+Hey, that looks quite promising!
+
+Let's finally plot it:
+
+
+
+```{r plot_assocation_predictors_cybocs3m}
+
+data_rect <- data.frame(xmin = -Inf, xmax = Inf, ymin = -.1, ymax = .1)
+
+
+data_regr %>%
+  select_if(is.numeric) %>%
+  correlate  %>%
+  focus(CYBOCS_3m) %>%
+  arrange(desc(abs(CYBOCS_3m))) %>% print(n=32) %>%
+  ggplot(aes(x = reorder(rowname, abs(CYBOCS_3m)), y = CYBOCS_3m)) + geom_point() +
+  coord_flip() +
+  xlab("predictor") +
+  ylab("Correlation with CYBOCS_3m") +
+  # ggtitle("Correlations of predictors with outcome (CYBOCS_3m)") +
+  geom_hline(yintercept = 0, linetype = "dashed")  +
+  geom_rect(data = data_rect,
+            aes(ymin = ymin, ymax = ymax, xmin = xmin, xmax = xmax), inherit.aes = FALSE, alpha = .3, fill = "red", color = "red")
+
+```
+
 
 
 ## split in train vs. test sample
@@ -231,6 +266,10 @@ do_lasso <- function(data = data_regr, p = .8, save = FALSE){
     value = values_not_zero
   )
   
+  lasso_coefs_not_zero %>% 
+    filter(name != "(Intercept)") -> lasso_coefs_not_zero
+  
+  
   results_lasso$lasso_coefs_not_zero <- lasso_coefs_not_zero
   
   ggplot(lasso_coefs_not_zero, aes(x = name, y = value)) +
@@ -299,18 +338,26 @@ lasso_regr_1 <- do_lasso()
 lasso_regr_1$plots[[1]]
 lasso_regr_1$plots[[2]]
 
-
-
 ```
+
+
+The exact (non-zero) beta coefficients are:
+
+```{r}
+lasso_regr_1$lasso_coefs_not_zero %>% kable
+```
+
+
 
 Let's look at the varimp:
 
 ```{r lasso_varimp}
 
-regr_varimp <- list()
 
 lasso_regr_1$lasso_coefs_not_zero %>% 
   mutate(rank = min_rank(desc(value))) -> regr_varimp$lasso_regr_1
+
+regr_varimp$lasso_regr_1 %>% kable
 ```
 
 
@@ -369,6 +416,7 @@ rf_regr_1 <- train(x = train_mm,
                    tuneLength=15, 
                    trControl=control,
                    ntrees = 1000)
+
 
 ```
 
@@ -596,32 +644,47 @@ According to this reasoning, we should retain the following variables (p < .05):
 
 ```{r lm1_signif_prdictors}
 univariate_lm_selection %>% 
-  filter(pvalue < .05) -> univariate_lm_selection_signif
+  filter(pvalue < .05) -> mod_results$glmfit1$univariate_lm_selection_signif
   
-kable(univariate_lm_selection_signif)
+kable(mod_results$glmfit1$univariate_lm_selection_signif)
 ```
 
-In sum, `r nrow(univariate_lm_selection_signif)` variables were chosen. 
+In sum, `r nrow(mod_results$glmfit1$univariate_lm_selection_signif)` variables were chosen. 
 
 However, I doubt that this procedure is the most advisable.
 
 
 ### Run regression with univariate predictor selection
 
+We take these predictors (which showed a statistical significant assocation with the outcome in bivariate regressions), and submit them to a multivariate regression.
+
 ```{r lm1_results}
 
 train_sample %>% 
-  dplyr::select(one_of(univariate_lm_selection_signif$names)) -> train_sample_univar_signif
+  dplyr::select(one_of(mod_results$glmfit1$univariate_lm_selection_signif$names)) -> train_sample_univar_signif
 
 lm(train_sample$CYBOCS_3m ~ . , data = train_sample_univar_signif) -> lm1
-  
+
 
 lm1 %>% 
   summary %>% 
   tidy %>% 
-  mutate_if(is.numeric, round, digits = 2) %>% 
+  dplyr::rename(predictor = term, b = estimate, SE = std.error, T = statistic, p = p.value) %>% 
+  mutate_if(is.numeric, round, digits = 3) %>% 
+  arrange(p) ->  mod_results$glmfit1$lm1_tidy
+
+
+
+mod_results$glmfit1$lm1_tidy %>% 
   kable
 
+
+```
+
+The same table, somewhat more beautiful:
+
+```{r lm1_stargazer, results = "asis"}
+stargazer(mod_results$glmfit1$lm1_tidy, type = "html")
 
 ```
 
@@ -633,7 +696,9 @@ lm1 %>%
   summary %>% 
   tidy %>% 
   filter(p.value < .05) %>% 
-  mutate_if(is.numeric, round, digits = 2) %>% 
+  mutate_if(is.numeric, round, digits = 2) -> mod_results$glmfit1$signif_preds
+
+mod_results$glmfit1$signif_preds %>% 
   kable
 
 ```
@@ -650,16 +715,22 @@ Let's take the ajusted R squared of the test sample with one predictor as the va
 
 ```{r lm1_varimp}
 
+mod_results$glmfit1$signif_preds$rank <- min_rank(mod_results$glmfit1$signif_preds$p)
+
 tibble(
-  name = "ADHD1",
-  value = summary(lm1)$adj.r.squared,
-  rank = min_rank(desc(value))
+  name =  mod_results$glmfit1$signif_preds$term,
+  value = mod_results$glmfit1$signif_preds$p.value,
+  rank = min_rank(mod_results$glmfit1$signif_preds$p.value)
 ) -> regr_varimp$lm1
 
-svm1_varimp$importance %>% 
-  rownames_to_column %>% 
-  dplyr::rename(name = rowname, value = Overall) %>% 
-  mutate(rank = min_rank(desc(value))) -> regr_varimp$svm_1
+
+# 
+# 
+# mod_results$glmfit1$signif_preds %>% 
+#   filter(term != "(Intercept)") %>% 
+#   dplyr::select(term, statistic) %>% 
+#   dplyr::rename(name = term, value = statistic) %>% 
+#   mutate(rank = min_rank(desc(value))) -> regr_varimp$LM_univariate
 
 ```
 
@@ -680,19 +751,21 @@ RMSE_lm_uni_Model2 <- RMSE(lm1_predict, test_sample$CYBOCS_3m)
 Here, the $R^2$ is `r round(R2_lm1, 2)`; the RMSE is `r round(RMSE_lm_uni_Model2, 2)`.
 
 
-## Stepwise Linear Model
+## Best subset Linear Model
 
 Let's try `leap::regsubsets` with forward selection. Max. nr. of predictors to be included: 10. 
 
-### Select predictors
 ```{r lm_stepwise}
 library(leaps)
-lm2 <- regsubsets(CYBOCS_3m ~ . , data = train_sample,
+LM_regsubsets <- regsubsets(CYBOCS_3m ~ . , data = train_sample,
                       nvmax = 10, 
                       method = "forward")
 
-lm2_summary <- summary(lm2)
-lm2_summary
+LM_regsubsets_summary <- summary(LM_regsubsets)
+LM_regsubsets_summary
+
+# train_sample_mm <- model.matrix(CYBOCS_3m ~ ., train_sample)[-1]  # no intercept
+
 ```
 
 
@@ -702,7 +775,7 @@ So let's look which variables have been included to the models (starting with 1 
 ```{r}
 for (i in 1:10) {
   cat(paste("***Model with ",i," predictor(s)***\n", paste = ""))
-  print(coef(lm2, i))
+  print(coef(LM_regsubsets, i))
 }
 ```
 
@@ -711,44 +784,43 @@ Ok, but which model (ie, with what number of predictors) should we choose?
 Let's look at *adjusted* $R^2$.
 
 ```{r}
-plot(lm2_summary$adjr2, type = "l")
-nr_predictors <- which.max(lm2_summary$adjr2)
-points(nr_predictors, lm2_summary$adjr2[nr_predictors], col = "red", cex = 2, pch = 20)
+plot(LM_regsubsets_summary$adjr2, type = "l")
+nr_predictors_adjr2 <- which.max(LM_regsubsets_summary$adjr2)
+points(nr_predictors, LM_regsubsets_summary$adjr2[nr_predictors], col = "red", cex = 2, pch = 20)
 ```
 
-That is, the model suggests `r nr_predictors` predictors to be included.
+That is, the model suggests `r nr_predictors_adjr2` predictors to be included.
 
 Let's look at $BIC$.
 
 ```{r}
-plot(lm2_summary$bic, type = "l")
-nr_predictors <- which.min(lm2_summary$bic)
-points(nr_predictors, lm2_summary$bic[nr_predictors], col = "red", cex = 2, pch = 20)
+plot(LM_regsubsets_summary$bic, type = "l")
+nr_predictors_bic <- which.min(LM_regsubsets_summary$bic)
+points(nr_predictors, LM_regsubsets_summary$bic[nr_predictors], col = "red", cex = 2, pch = 20)
 ```
 
 
-That is, the model suggests `r nr_predictors` predictors to be included.
+That is, the model suggests `r nr_predictors_bic` predictors to be included.
 
 
 $BIC$ is more strict in terms of allowing predictors to enter the model. So let's look finally to $C_p$:
 
 
 ```{r}
-plot(lm2_summary$cp, type = "l")
-nr_predictors <- which.min(lm2_summary$cp)
-points(nr_predictors, lm2_summary$cp[nr_predictors], col = "red", cex = 2, pch = 20)
+plot(LM_regsubsets_summary$cp, type = "l")
+nr_predictors_cp <- which.min(LM_regsubsets_summary$cp)
+points(nr_predictors, LM_regsubsets_summary$cp[nr_predictors], col = "red", cex = 2, pch = 20)
 ```
 
 
-That is, the model suggests `r nr_predictors` predictors to be included.
+That is, the model suggests `r nr_predictors_cp` predictors to be included.
 
-Ok, so let's stick to `r nr_predictors` predictors. These are:
+Ok, so let's stick to `r nr_predictors_adjr2` predictors. These are:
 
 ```{r}
-coef(lm2, nr_predictors)[-1]
-best_preds <- names(coef(lm2, nr_predictors))[-1]  # first is "intercept"
+coef(LM_regsubsets, nr_predictors)[-1]
+best_preds <- names(coef(LM_regsubsets, nr_predictors_adjr2))[-1]  # first is "intercept"
 
-if ("ADHD1" %in% best_preds) best_preds[best_preds == "ADHD1"] <- "ADHD"
 ```
 
 Run model with best predictor subset to get all typical statistics.
@@ -756,16 +828,20 @@ Run model with best predictor subset to get all typical statistics.
 ```{r lm_regr_subsets_best_preds}
 
 
+# best_preds <- str_replace(best_preds,"\\d","")  
+# model.matrix puts factor levels into names, that can cause confusion
 
-train_sample %>% 
+train_mm <- data.frame(train_mm)
+
+train_mm %>% 
   dplyr::select(one_of(best_preds)) %>% 
-  do(tidy(lm(train_sample$CYBOCS_3m ~ ., data = .))) -> lm2_bestsub
+  do(tidy(lm(train_sample$CYBOCS_3m ~ ., data = .))) -> LM_regsubsets_bestsub
 
-lm2_bestsub %>% 
+LM_regsubsets_bestsub %>% 
   filter(term != "(Intercept)") %>% 
   dplyr::select(term, statistic) %>% 
   dplyr::rename(name = term, value = statistic) %>% 
-  mutate(rank = min_rank(desc(value))) -> regr_varimp$lm2_bestsub
+  mutate(rank = min_rank(desc(value))) -> regr_varimp$LM_regsubsets_bestsub
 
 
 
@@ -778,7 +854,7 @@ lm2_bestsub %>%
 Now let's see the predictive accuracy using the TEST sample.
 
 
-```{r predict_lm2}
+```{r predict_LM_regsubsets}
 
 predict.regsubsets = function(object, newdata, id, ...) {
         form  <-  as.formula(~.)
@@ -788,15 +864,15 @@ predict.regsubsets = function(object, newdata, id, ...) {
         mat[, xvars] %*% coefi
 }  # credit to: https://github.com/yufree/democode/blob/master/rml/predict.regsubsets.R
 
-lm2_predict <- predict(lm2, newdata = test_sample, id = nr_predictors)
+LM_regsubsets_predict <- predict(LM_regsubsets, newdata = test_sample, id = nr_predictors)
 # str(dummy_model2)
-summary(lm2_predict)
+summary(LM_regsubsets_predict)
   
-R2_lm2 <- R2(lm2_predict, test_sample$CYBOCS_3m)  
-RMSE_lm2 <- RMSE(lm2_predict, test_sample$CYBOCS_3m)
+R2_LM_regsubsets <- R2(LM_regsubsets_predict, test_sample$CYBOCS_3m)  
+RMSE_LM_regsubsets <- RMSE(LM_regsubsets_predict, test_sample$CYBOCS_3m)
 ```
 
-Here, the $R^2$ is `r round(R2_lm2, 2)`; the RMSE is `r round(RMSE_lm2, 2)`.
+Here, the $R^2$ is `r round(R2_LM_regsubsets, 2)`; the RMSE is `r round(RMSE_LM_regsubsets, 2)`.
 
 
 
@@ -806,15 +882,18 @@ Here, the $R^2$ is `r round(R2_lm2, 2)`; the RMSE is `r round(RMSE_lm2, 2)`.
 ```{r compute_model_comparison}
 
 regr_results <- tibble(
-  RMSE_models = c(lasso_regr_1$RMSE, lasso_regr_2$RMSE, rf1_RMSE_test, svm1_RMSE_test, gbm1_RMSE_test, RMSE_lm_uni_Model2, RMSE_lm2),
-  R2_models = c(lasso_regr_1$R2, lasso_regr_2$R2, rf1_R2_test, svm1_R2_test, gbm1_R2_test, R2_lm1, R2_lm2),
-  name_models = c("Lasso_1", "Lasso_2", "RF", "SVM", "GBM", "LM_uni", "LM_regsubsets")
+   name_models = c("Lasso_1", "Lasso_2", "RF", "SVM", "GBM", "LM_uni", "LM_regsubsets"),
+  RMSE_models = c(lasso_regr_1$RMSE, lasso_regr_2$RMSE, rf1_RMSE_test, svm1_RMSE_test, gbm1_RMSE_test, RMSE_lm_uni_Model2, RMSE_LM_regsubsets),
+  R2_models = c(lasso_regr_1$R2, lasso_regr_2$R2, rf1_R2_test, svm1_R2_test, gbm1_R2_test, R2_lm1, R2_LM_regsubsets)
 )
 
 regr_results %>% 
   dplyr::select(name_models, R2_models, RMSE_models) %>% 
-  dplyr::rename(`name of model` = name_models, `Rsquared` = R2_models, RMSE = RMSE_models) %>% 
+  dplyr::rename(`model` = name_models, `Rsquared` = R2_models, RMSE = RMSE_models) %>% 
   mutate_if(is.numeric, round, digits = 2) %>% 
+  arrange(desc(Rsquared)) -> regr_results
+
+regr_results %>% 
   kable
 
 
@@ -846,30 +925,48 @@ Put the list elements with the var.imp. data in one data frame:
 do.call("rbind", regr_varimp) %>% 
   rownames_to_column %>% 
   dplyr::rename(model = rowname) %>% 
-  filter(name != "(Intercept)") -> varimp_all
+  filter(name != "(Intercept)") %>% 
+  arrange(desc(value)) -> varimp_all
 
 
 kable(varimp_all)
+
+# varimp_all %>% filter(str_detect(model, "LM"))
 ```
 
 
-But as only Boosting and RF were successful, let's only consider the variables from those models.
+Let's pick the two most successful models, and let's only consider the variables from those models.
 
-```{r varimp_all_boost_rf}
+```{r best_two_models}
+
+best_regr_models <- vector()
+
+best_regr_models[1] <- regr_results$model[1] 
+best_regr_models[2] <- regr_results$model[2] 
+
+```
+
+So the best two models were `r best_regr_models`.
+
+Now let's look at the variable importance measures from these two variables.
+
+```{r}
 
 varimp_all %>% 
-  filter(str_detect(model, "gbm")) %>% 
-  top_n(-10) -> varimp_gbm
+  mutate(model = tolower(model)) %>% 
+  filter(str_detect(model, tolower(regr_results$model[1]))) %>% 
+  top_n(-10) -> varimp_best_1
 
-kable(varimp_gbm)
+kable(varimp_best_1)
 
 
 varimp_all %>% 
-  filter(str_detect(model, "rf")) %>% 
-  top_n(-10) -> varimp_rf
+  mutate(model = tolower(model)) %>% 
+  filter(str_detect(model, tolower(regr_results$model[2]))) %>% 
+  top_n(-10) -> varimp_best_2
   
   
-kable(varimp_rf)
+kable(varimp_best_2)
 
 ```
 
@@ -877,9 +974,9 @@ What predictors appear in both "hit lists"?
 
 ```{r varimp_intersect}
 
-base::intersect(varimp_gbm$name, varimp_rf$name) -> varimp_intersect
+base::intersect(varimp_best_1$name, varimp_best_2$name) -> varimp_intersect
 
 varimp_intersect
 ```
 
-These are the variables that where among the 10 most important predictors in both (best performing) models. Let's take them as our "best guess" as the most important ones.
+These are (this is) the variable(s) that where among the 10 most important predictors in the two (best performing) models. Let's take them as our "best guess" as the most important ones.

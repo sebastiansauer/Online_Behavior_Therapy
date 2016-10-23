@@ -1,0 +1,21 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+|term                 | estimate| std.error| statistic| p.value|
+|:--------------------|--------:|---------:|---------:|-------:|
+|ADHD1                |     4.16|      2.75|      1.51|    0.14|
+|ChOCI_R_P_sumimp_PRE |     0.14|      0.17|      0.81|    0.42|
+|yearswithOCD         |     0.44|      0.57|      0.77|    0.44|
+|CYBOCS_pre_avoid     |     0.93|      1.20|      0.78|    0.44|
+|SCAS_S_P_sum_PRE     |     0.18|      0.24|      0.75|    0.46|
+|(Intercept)          |     5.22|     11.44|      0.46|    0.65|
+|CBT_OCD1             |     3.14|      6.88|      0.46|    0.65|
+|CDI_S_sum_PRE        |     0.15|      0.36|      0.41|    0.68|
+|CYBOCS_pre_COMP      |    -0.20|      0.54|     -0.37|    0.71|
+|EWSASP_sum_PRE       |    -0.05|      0.15|     -0.37|    0.72|
+|CGI_S_pre            |     0.69|      1.90|      0.36|    0.72|
+|OCD_treatm_expnone1  |    -1.54|      6.96|     -0.22|    0.83|
+|OCDonset             |    -0.04|      0.54|     -0.07|    0.95|
+|ChOCI_R_C_sumimp_PRE |    -0.01|      0.18|     -0.05|    0.96|

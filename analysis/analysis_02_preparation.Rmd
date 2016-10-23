@@ -338,43 +338,60 @@ data_mod2 %>%
 ```
 
 
-In order to identify sparse nominal (factor) variables, we should first dummy-code them. Here is the list of sparse variables.
+In order to identify sparse nominal (factor) variables, we should first dummy-code them. 
 
-```{r exclude_sparse_variables}
+```{r exclude_sparse_variables1}
 
 data_mod3 <- model.matrix(~ ., data = data_mod2)
 
 data_mod3 %>% data.frame -> data_mod3
 
+attr(data_mod3, "sparse_vars_excluded") <- FALSE
+```
+
+Now the data frame has been turned into a model.matrix (ie., all factor variables are now dummy-coded ie., binary). The number of variables (columns) is now: `r ncol(data_mod3)`. Note that the `x.intercept` variable is an artefact by the `model.matrix` function, but should be exluded nonetheless.
+
+Let's check how many sparse variables are identified.
+
+```{r exclude_sparse_variables2}
+
+
 data_mod3 %>% 
   nearZeroVar(saveMetrics = TRUE)  %>% 
   rownames_to_column %>% 
-  filter(nzv == TRUE) %>% 
+  filter(nzv == TRUE) %>%
+  dplyr::rename(predictor = rowname) -> nzv_df
+
+nzv_df %>% 
   kable
 
 data_mod3 %>% 
-    nearZeroVar -> sparse_vars
+    nearZeroVar -> sparse_vars_idx
 
-names(data_mod3)[sparse_vars]
+names(data_mod3)[sparse_vars_idx] -> sparse_vars
 
 
 ```
+
+In sum, the number of sparse variables is `r length(sparse_vars)`.
 
 Let's look at the distributions of the nzv variables.
 
 ```{r}
 data_mod3 %>% 
-  select(one_of(names(data_mod3)[sparse_vars])) %>% 
+  select(one_of(sparse_vars)) %>% 
   map(~table(.))
 ```
 
 
-Then let's *exclude* the NZV variables.
+Is is evident that binary variables with factors where n is only 1, 2 or 3 cannot be of use. Then let's *exclude* the NZV variables.
 
 ```{r}
 
 data_mod3 %>% 
-  dplyr::select(-sparse_vars) -> data_mod3
+  dplyr::select(-sparse_vars_idx) -> data_mod3
+
+attr(data_mod3, "sparse_vars_excluded") <- TRUE
 
 ```
 
@@ -408,7 +425,8 @@ if (write_to_file == TRUE) write_csv(data_mod3, path = "raw_data/data_mod3.csv")
 The factor variables with sparse levels (now excluded) are: 
 
 ```{r}
-names(data_mod3)[sparse_vars]
+sparse_vars
+
 ```
 
 The remaining number of *cols* is: `r ncol(data_mod3)`.

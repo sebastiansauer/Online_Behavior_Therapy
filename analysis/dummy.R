@@ -196,3 +196,14 @@ for (i in seq_along(names(data_comorb))){
 
 =======
 >>>>>>> origin/master
+
+
+
+
+
+table(train_sample$responder_3m_f)
+table(data_class$responder_3m_f)
+qplot(x = responder_3m_f, y = OCDonset, geom = c("boxplot", "jitter"), data = train_sample)
+
+
+

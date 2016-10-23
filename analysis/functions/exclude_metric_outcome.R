@@ -1,0 +1,13 @@
+exclude_metric_outcome <- function(data_df = data_class){
+  if ("CYBOCS_3m" %in% names(data_df)) {
+    data_df <- dplyr::select(data_df, -CYBOCS_3m)
+    message("CYBOCS_3m has been excluded from the data set\n")
+  }else {
+    message("CYBOCS_3m was not in data frame")
+  }
+  return(data_df)
+}
+
+data_class <- exclude_metric_outcome(data_class)
+
+message("function 'exclude_metric_outcome' was run")

@@ -19,7 +19,7 @@ library(knitr)
 opts_knit$set(root.dir=normalizePath('../'))
 
 knitr::opts_chunk$set(echo = TRUE, 
-                      cache = FALSE, 
+                      cache = TRUE, 
                       warning = FALSE, 
                       message = FALSE)
 ```
@@ -29,25 +29,7 @@ Load libraries, define overhead variables.
 
 ```{r libs}
 
-
-library(gridExtra)
-library(broom)
-library(compute.es)
-library(corrr)
-library(purrr)
-library(doMC)  # multiple cores
-library(pscl)  # pseudo R^2
-library(magrittr) # piping
-library(mice)  # imputation
-library(testthat)
-library(readr) # csv import
-library(knitr) # rmarkdown
-library(tidyr) # tibbling objects
-library(caret) # modeling
-library(ggplot2) # plotting
-library(tibble) # tibble
-library(dplyr) # data wrangling
-library(glmnet)
+source("analysis/functions/load_libs.R")
 
 
 # results/ variables
@@ -115,8 +97,9 @@ data_class %>%
 
 ```
 
-Load function "save_results.Rdm"
-``` {r fun_save, child = 'functions/save_results.Rmd'}
+Load function `save_model_results`
+``` {r fun_save_model_results}
+source("analysis/functions/save_model_results.R")
 ```
 
 
@@ -125,14 +108,18 @@ Load function "save_results.Rdm"
 
 Before I forget: we need to exclude the metric outcome variable `CYBOCS_3m`.
 
-```{r fun_exclude, child = "functions/exclude_CYBOCS_3M.Rmd"}
+```{r fun_exclude}
+
+source("analysis/functions/exclude_metric_outcome.R")
 
 ```
 
 Now, let's split up the data in a test sample and a training sample.
 
 
-```{r fun_tst, child = "functions/test_split_data.Rmd"}
+```{r fun_tst}
+
+source("analysis/functions/test_split_data.R")
 
 ```
 
@@ -221,12 +208,14 @@ Ok, so some small log alpha (close to zero) seem appropriate.
 
 For ths best model, let's look at the shrinked model parameters:
 ```{r print_lasso_coef}
-coef(lasso_cv, s = "lambda.min")
 
+mod_results$lasso$coef <- coef(lasso_cv, s = "lambda.min")
+mod_results$lasso$coef_signif <- mod_results$lasso$coef@Dimnames[[1]][mod_results$lasso$coef@i]
+mod_results$lasso$coef 
 ```
 
 
-Josh! That's the Null model... No predictor at all was included to the best model. :-/
+So, in sum, there were `r length(mod_results$lasso$coef_signif)` "significant" (not irrelevant) parameters.
 
 So, with this alpha-penalty, the model achieved the best prediction: `r lasso_cv$lambda.min`.
 
@@ -297,9 +286,15 @@ Now, let's check the results.
 summary(lasso_cv_2)
 print(lasso_cv_2)
 coef(lasso_cv_2, s = "lambda.min")
+
+mod_results$lasso_cv_2$coef <- coef(lasso_cv_2, s = "lambda.min")
+mod_results$lasso_cv_2$coef_signif <- mod_results$lasso_cv_2$coef@Dimnames[[1]][mod_results$lasso_cv_2$coef@i]
+mod_results$lasso_cv_2$coef 
+
 ```
 
-Hm, it is not better, even slightly worse.
+
+So, in sum, there were `r length(mod_results$lasso_cv_2$coef_signif)` "significant" (not irrelevant) parameters in this 60/40 Lasso model.
 
 Now, let's check predictive accuracy.
 
@@ -666,7 +661,7 @@ mod_results$svm_2 <- save_model_results(obj = svm_2,
 
 # Sense check
 
-As the results were not as (good as) expected, let's do a sense check.
+As the results were not clear-cut, let's do a sense check.
 
 ## Compare groups of outcome variable for each numeric predictor
 
@@ -689,11 +684,32 @@ data_class %>%
   ggplot(aes(x = reorder(key, value), y = value)) + 
   geom_point(aes(color = pvalue, shape = pvalue)) + 
   coord_flip() +
+  geom_hline(yintercept = .05, color = "grey", linetype = "dashed") +
   ylab("p value") +
   xlab("predictor") #+
   # ggtitle("Differences (t-test p-value) between the two outcome groups")
   
 ```
+
+The p-values of the  predictors was:
+
+```{r}
+data_class %>% 
+  dplyr::select(one_of(num_preds)) %>% 
+  na.omit() %>% 
+  map(~t.test(. ~ data_class$responder_3m_f)$p.value) %>% 
+  as.data.frame %>% 
+  gather %>% 
+  rename(predictor = key, p_value = value) %>% 
+  mutate(p_value = round(.$p_value, 2)) %>% 
+  arrange(p_value) -> signif_preds
+
+signif_preds %>% 
+  kable
+```
+
+The number of predictors with p-value <.05 is `r nrow(signif_preds)`.
+
 
 So out of all predictors, it appears that only few are statistically significant. That is, the two outcome groups differ statistically significantly on these values:
 
@@ -704,9 +720,16 @@ data_class %>%
   map(~t.test(. ~ data_class$responder_3m_f)$p.value) %>% 
   as.data.frame %>% 
   gather %>% 
-  filter(value <  .05) %>% 
-  arrange(value)
+  rename(predictor = key, p_value = value) %>% 
+  filter(p_value < .05) -> signif_preds
+
+signif_preds %>% 
+  filter(p_value < .05) %>% 
+  mutate(p_value = round(.$p_value, 4)) %>% 
+  arrange(p_value) %>% 
+  kable
 ```
+
 
 Note that no control for multiple testing was undertaken. Interpret with caution.
 

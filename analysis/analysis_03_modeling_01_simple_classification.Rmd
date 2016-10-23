@@ -17,7 +17,8 @@ output:
 cat("***starting\n***")
 
 
-
+library(testthat)  # testing
+library(leaps)  # regression leaps
 library(doMC)  # multiple cores
 library(pscl)  # pseudo R^2
 library(magrittr) # piping
@@ -30,6 +31,7 @@ library(caret) # modeling
 library(ggplot2) # plotting
 library(tibble) # tibble
 library(dplyr) # data wrangling
+library(purrr)  # functional programming
 
 
 
@@ -46,15 +48,22 @@ knitr::opts_knit$set(root.dir=normalizePath('../'))
 
 # results/ variables
 mod_results <- list()
-
+important_predictors <- list()
 
 # overhead
-write_to_file <- TRUE
-recompute <- TRUE
-test_it <- TRUE
+
 registerDoMC(cores = 4)
 
 ```
+
+
+Define whether we work.
+```{r do_we_work}
+write_to_file <- TRUE
+recompute <- TRUE
+test_it <- TRUE
+```
+
 
 # Modeling BiPOCD
 
@@ -66,8 +75,15 @@ data_class$responder_3m_f <- factor(data_class$responder_3m_f)
 dim(data_class)
 ```
 
-```{r fnction_test_results, child = 'functions/save_results.Rmd'}
+
+
+```{r function_write_model_results}
+
+source("analysis/functions/save_model_results.R")
+
+
 ```
+
 
 
 The dimensions of the data frame is `r dim("data_mod3.csv")`.
@@ -79,15 +95,41 @@ As we have two outcomes, one dichotomous and one metric, we can both do classifi
 
 Before I forget: we need to exclude the metric outcome variable `CYBOCS_3m`.
 
-```{r child = "functions/exclude_CYBOCS_3M.Rmd"}
+```{r exclude_metric_outcome}
+
+exclude_metric_outcome <- function(data_df = data_class){
+  if ("CYBOCS_3m" %in% names(data_df)) {
+    data_df <- dplyr::select(data_df, -CYBOCS_3m)
+    message("CYBOCS_3m has been excluded from the data set\n")
+  }else {
+   message("CYBOCS_3m was not in data frame") 
+  }
+  return(data_df)
+}
+
+data_class <- exclude_metric_outcome(data_class)
+
 ```
 
 Number of columns in `data_class`: `r ncol(data_class)`.
 
 
-```{r child  = "functions/test_split_data.Rmd"}
-```
+```{r test_split_data}
+test_split_data <- function(data_df = data_class){
+  cat("Class of DV:\n")
+  print(str(data_df$responder_3m_f))
+  print(str(data_df$responder_3m_f))
+  print(str(data_df$responder_3m_f))
+  
+  
+  if ("CYBOCS_3m" %in% names(data_df)) warning("CYBOCS_3m is *in* test sample")
+  if (!("CYBOCS_3m" %in% names(data_df))) message("CYBOCS_3m is NOT in test sample")
+  message("done")
+}
 
+test_split_data(data_class)
+
+```
 
 
 ```{r data_class_train_test}
@@ -108,7 +150,7 @@ if (test_it ==  TRUE) test_split_data()
 
 
 
-## LM
+## Linear Model with all predictors included (probably not identified)
 
 Let's fit a linear logistic model. The model showed some problems with factor variables that have sparsely populated levels. Additionally, the ratio of variables to observations is not really nice. We probably will not arrive anywhere with this model.
 
@@ -117,10 +159,10 @@ Let's fit a linear logistic model. The model showed some problems with factor va
 
 ```{r glmfit1, warning = FALSE, message = TRUE}
 
-do_glmfit1 <- function(data_df = data_class){
+do_glmfit1 <- function(data_df = data_class, n_reps = 5){
 
   ctrl <- trainControl(method = "repeatedcv", 
-                       repeats = 5,
+                       repeats = n_reps,
                        number = 10)
   
   glmfit1 <- train(factor(responder_3m_f) ~ .,
@@ -132,11 +174,15 @@ do_glmfit1 <- function(data_df = data_class){
 
 }
 
+
+expect_true(is.factor(train_sample$responder_3m_f))
+
 glmfit1 <- do_glmfit1(train_sample)
 summary(glmfit1)
 print(glmfit1)
 confusionMatrix(glmfit1)
 
+# undebug(save_model_results)
 mod_results$glmfit1 <- save_model_results(glmfit1)
 # 
 # dummy <- predict(glmfit1, test_sample)
@@ -173,10 +219,10 @@ glmfit1 <- glm(responder_3m_f ~ .,
                data = train_sample,
                family = "binomial",
                control = list(maxit = 50))
-pR2(glmfit1)
+print(pR2(glmfit1))
 ```
 
-Here, the algorithm tells us that we ran into problems; it may well be that we have too many predictors. MacFadden's R^2 is 1; appears too good to be true.
+Here, the algorithm tells us that we ran into problems; it may well be that we have too many predictors. MacFadden's R^2 is 1; appears too good to be true. We should not consider this model any further.
 
 
 
@@ -217,13 +263,16 @@ do_glmfit2 <- function(save_results = FALSE, data_df = train_sample, n_repeats =
 ```{r compute_glmfit2, include = FALSE}
 
 # use this to save computation time:
-#glmfit2 <- do_glmfit2(data = train_sample, n_repeats = 1)  
+# glmfit2 <- do_glmfit2(data = train_sample, n_repeats = 1)  
 # names(glmfit2$trainingData)
+# save(glmfit2, file = "data_objects/glmfit2.Rda")
+
 
 if (recompute == TRUE) {
   glmfit2 <- do_glmfit2()
+  save(glmfit2, file = "data_objects/glmfit2.Rda")
   }else{
-  load(file = "../data_objects/glmfit2.Rda")
+  load(file = "data_objects/glmfit2.Rda")
   }
 
 ```
@@ -238,22 +287,25 @@ glmfit2_pred <- predict(glmfit2, newdata = test_sample)
 mod_results$glmfit2$fit <- glmfit2
 (mod_results$glmfit2$confusion_matrix <- confusionMatrix(data = glmfit2_pred, test_sample$responder_3m_f))
 mod_results$glmfit2$name <- "glmfit2"
-#mod_results$glmfit2$varimp <- varImp(glmfit2, scale = FALSE)
+# mod_results$glmfit2$varimp <- varImp(glmfit2, scale = FALSE)
 
 
 
-# cat("Class of DV:\n")
-# str(data_class$responder_3m_f)
-# str(train_sample$responder_3m_f)
-# str(test_sample$responder_3m_f)
 
 ```
 
 
-Hm, that's not so enlightning. Let's try a different function, `leaps::regsubsets`. Let's do forward selection. Max. nr. of predictors to be included: 10. Note: Here we take the full dataset for model selection. But at least, we use statistics which take the number of predictors into account when choosing the "right" model.
+Kappa was negative. We should not consider this model further.
+
+
+## Best subsets regression
+That last model is not so enlightning. Let's try a different function, `leaps::regsubsets`. Let's do forward selection. Max. nr. of predictors to be included: 10. Note: Here we take the full dataset for model selection. But at least, we use statistics which take the number of predictors into account when choosing the "right" model.
+
+### Select predictors
+First, let's use best subset (brut force) search to identify a subset of relevant predictors.
 
 ```{r glmfit3}
-library(leaps)
+
 glmfit3 <- regsubsets(responder_3m_f ~ . , data = data_class,
                       nvmax = 10, 
                       method = "forward")
@@ -326,7 +378,7 @@ best_preds <- names(coef(glmfit3, nr_predictors))[-1]  # first is "intercept"
 ```
 
 
-# LM with reduced number of predictors
+### LM with reduced number of predictors
 Ok, now again a linear (logistic) model with the reduced number of predictors. Remember that we work with a train and test sample all the time.
 
 
@@ -346,6 +398,7 @@ glmfit4 <- train(factor(responder_3m_f) ~ .,
                  data = train_best_preds,
                  method = "glm",
                  trControl = ctrl)
+
 summary(glmfit4)
 
 
@@ -356,11 +409,25 @@ summary(glmfit4)$coefficients %>% as_tibble %>%
   dplyr::select(predictors, Estimate:`Pr(>|z|)`) -> 
   glmfit4_coefs
 
-kable(glmfit4_coefs)
-
-mod_results$glmfit4 <- save_model_results(glmfit4, test_df = test_best_preds)
+names(glmfit4_coefs) <- c("predictors", "Estimate", "SE", "z_value", "p_value")
 
 
+glmfit4_coefs %>% 
+  mutate_if(is.numeric, funs(round), digits = 2) %>% 
+  kable
+
+
+mod_results$glmfit4 <- save_model_results(glmfit4, test = test_sample)
+
+
+
+```
+
+
+So, the predictors deemed important where:
+
+```{r}
+glmfit4_coefs$predictors
 
 ```
 
@@ -382,34 +449,52 @@ mod_results$glmfit4$confusion_matrix
 
 
 
-Ok, interesting, we see that not many variables are statistically significant (p<.05) now. Precisely, those were statistically significant:
+Ok, interesting, we see that some variables are statistically significant (p<.05) now. Precisely, those were statistically significant:
 
 ```{r}
 
-glmfit4_coefs %>% rename(p_value = `Pr(>|z|)`) -> glmfit4_coefs  
+# glmfit4_coefs %>% rename(p_value = `Pr(>|z|)`) -> glmfit4_coefs  
 # easier name for typing
 
 glmfit4_coefs %>% 
-  filter(p_value < .05) %T>% kable -> signif_preds
+  filter(p_value < .05) -> glm_fit4_signif_preds
 
 
-names(signif_preds$predictors)
+kable(glm_fit4_signif_preds)
+
+glm_fit4_signif_preds$predictors
 
 
 # signif_preds$predictors %in% names(data_class)
+
+important_predictors$bestsubset <- glm_fit4_signif_preds$predictos
 
 
 ```
 
 Ok, interesting.
 
+Let's look at the significant predictors in some more detail.
+
+```{r}
+train_sample %>% 
+  select(one_of(glm_fit4_signif_preds$predictors), responder_3m_f) %>% 
+  gather(key = predictor, value = value, -responder_3m_f) %>% 
+  ggplot(aes(x = responder_3m_f, y = value)) + 
+  geom_boxplot(alpha = .5) +
+  geom_jitter() +
+  facet_wrap(~predictor, scales = "free")
+```
+
+
+
 
 Maybe let's have a look at the distribution in the sample:
 
 ```{r}
-if (length(signif_preds$predictors) > 0) {
+if (length(glm_fit4_signif_preds$predictors) > 0) {
   data_class %>%
-    select(one_of(signif_preds$predictors), responder_3m_f) %>% 
+    select(one_of(glm_fit4_signif_preds$predictors), responder_3m_f) %>% 
     gather(key = variable, value = value, -responder_3m_f) %>% 
     ggplot(aes(x = responder_3m_f, y = value)) +
     facet_wrap(~variable, scales = "free") + geom_boxplot() + geom_jitter()
@@ -425,6 +510,7 @@ Don't forget to save results to disk...
 
 ```{r}
 save(mod_results, file = "mod_results.Rda")
+save(important_predictors, file = "important_predictors.Rda")
 ```
 
 We did not alter the data, so no need to same them to disk.
