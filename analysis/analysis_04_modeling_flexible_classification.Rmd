@@ -65,7 +65,12 @@ Read data.
 ```{r read_data}
 data_class <- read_csv("raw_data/data_mod3.csv")
 
-load(file = "analysis/mod_results.Rda")
+load(file = "data_objects/mod_results.Rda")
+load(file = "data_objects/important_predictors.Rda")
+
+expect_equal(length(mod_results), 4)
+expect_gt(length(important_predictors), 0)
+
 
 ```
 
@@ -212,6 +217,9 @@ For ths best model, let's look at the shrinked model parameters:
 mod_results$lasso$coef <- coef(lasso_cv, s = "lambda.min")
 mod_results$lasso$coef_signif <- mod_results$lasso$coef@Dimnames[[1]][mod_results$lasso$coef@i]
 mod_results$lasso$coef 
+
+important_predictors$lasso1 <- mod_results$lasso$coef_signif
+
 ```
 
 
@@ -290,6 +298,10 @@ coef(lasso_cv_2, s = "lambda.min")
 mod_results$lasso_cv_2$coef <- coef(lasso_cv_2, s = "lambda.min")
 mod_results$lasso_cv_2$coef_signif <- mod_results$lasso_cv_2$coef@Dimnames[[1]][mod_results$lasso_cv_2$coef@i]
 mod_results$lasso_cv_2$coef 
+
+
+important_predictors$lasso2 <- mod_results$lasso_cv_2$coef_signif
+
 
 ```
 
@@ -382,15 +394,24 @@ What about the variable importance:
 ```{r rf_varimp}
 plot(varImp(rf1))
 plot(varImp(rf1, scale = FALSE))
+
+rf1_varimp <- varImp(rf1)
+
+rf1_varimp$importance %>% 
+  rownames_to_column %>% 
+  rename(predictor = rowname, var_imp = Overall) %>% 
+  arrange(desc(var_imp)) %>% 
+  top_n(5) %>% 
+  .[["predictor"]] -> important_predictors$rf1
+
 ```
 
 Note that the varImp values are scaled relatively in the first output; ie., the most important variable has value of 100. In the second output, the mean decrease in predictive accuracy is given, when the variable would be randomly permutated (ie., broken). Note that varImp is based on cross validated training data.
 
-Hm, looks not good. True test values for prediction are: `r test_sample$responder_3m_f`.
+The predictors above the "scree" were the first five:
 
-However, it was predicted that `r rf1_predict`.
 
-Worse than chance... Can that be? Strange.
+
 
 ```{r save_rf1}
 
@@ -459,8 +480,21 @@ What about the variable importance:
 plot(varImp(rf2))
 plot(varImp(rf2, scale = FALSE))
 
+
+
 ```
 
+Here, it appears as if the screeplot suggests three variables are the most important ones.
+
+```{r}
+
+varImp(rf2)$importance %>% 
+  rownames_to_column %>% 
+  rename(predictor = rowname, var_imp = Overall) %>% 
+  arrange(desc(var_imp)) %>% 
+  top_n(5) %>% 
+  .[["predictor"]] -> important_predictors$rf2
+```
 
 
 
@@ -551,7 +585,21 @@ Variable Importance: Note that SVM do not have an intrinsic varImp algorithm. In
 
 svm1_varImp <- caret::varImp(svm1, scale = FALSE)
 plot(svm1_varImp)
+plot(svm1_varImp)
 
+```
+
+The first three variables appear to be the most important ones.
+
+```{r}
+
+svm1_varImp$importance %>% 
+  rownames_to_column %>% 
+  rename(predictor = rowname, var_imp = negative) %>% 
+  dplyr::select(predictor, var_imp) %>% 
+  arrange(desc(var_imp)) %>% 
+  top_n(5) %>% 
+  .$predictor -> important_predictors$svm1
 ```
 
 
@@ -643,6 +691,22 @@ svm_2_varImp <- caret::varImp(svm_2, scale = FALSE)
 plot(svm_2_varImp)
 ```
 
+
+Here, the first five variables might be seen as the most important ones.
+
+```{r}
+
+svm_2_varImp$importance %>% 
+  rownames_to_column %>% 
+  rename(predictor = rowname, var_imp = negative) %>% 
+  dplyr::select(predictor, var_imp) %>% 
+  arrange(desc(var_imp)) %>% 
+  top_n(5) %>% 
+  .[["predictor"]] -> important_predictors$svm2
+
+important_predictors$svm2
+
+```
 
 
 
@@ -818,6 +882,26 @@ Both plots together:
 ```{r es_plot_grid}
 grid.arrange(es_plot_1, es_plot_2)
 ```
+
+
+## Summary over relevant predictors
+Let's put together which predictors were deemed relevant by the different models:
+
+- Linear model with all predictors: negative Kappa, not included
+- Linear model with stepwise predictor selection based on AIC: negative Kappa, not included
+- Lasso model 1 (80/20 sample dividing)
+- Lasso model 2 (60/40 sample dividing)
+- Random Forest model 1 (80/20 sample dividing)
+- Random Forest model 2 (60/40 sample dividing)
+- Support Vector Machines model 1 (80/20 sample dividing)
+- Support Vector Machines model 2 (60/40 sample dividing)
+
+
+```{r}
+do.call(intersect(important_predictors))
+```
+
+
 
 
 Don't forget to save results to disk...

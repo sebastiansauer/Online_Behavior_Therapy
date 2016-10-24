@@ -467,7 +467,7 @@ glm_fit4_signif_preds$predictors
 
 # signif_preds$predictors %in% names(data_class)
 
-important_predictors$bestsubset <- glm_fit4_signif_preds$predictos
+important_predictors$bestsubset <- glm_fit4_signif_preds$predictors
 
 
 ```
@@ -508,9 +508,13 @@ Time to look at different models!
 
 Don't forget to save results to disk...
 
-```{r}
-save(mod_results, file = "mod_results.Rda")
-save(important_predictors, file = "important_predictors.Rda")
+```{r save_results}
+
+expect_equal(length(mod_results), 4)
+save(mod_results, file = "data_objects/mod_results.Rda")
+
+expect_gt(length(important_predictors), 0)
+save(important_predictors, file = "data_objects/important_predictors.Rda")
 ```
 
 We did not alter the data, so no need to same them to disk.
