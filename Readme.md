@@ -20,7 +20,10 @@ For each of the 5 analyses, a `Rmd` source file is provided, and a `html` output
 There are some *subfolders* in `analysis`(of minor importance):  
 --analysis -- *diverse*: stuff for testing, experimenting, but didn't make it as "real" results of this analysis. This folder can safely be ignored to date.  
 --analysis -- *functions*: Some R functions are packed to this folder, R functions which are used throughout this analysis.  
---analysis -- **data_objects**: some R objects which are handed through the different analyses.
+
+
+
+-- **data_objects**: some R objects which are handed through the different analyses.
 
 
 
