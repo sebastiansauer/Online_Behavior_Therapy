@@ -6,7 +6,7 @@ The corresponding author of this paper is [Fabian Lenhard](<fabian.lenhard@ki.se
 
 This code was written by @sebastiansauer.
 
-The repository is organized in the following folder:
+The repository is organized in the following two folder:
 
 -- **analysis** provides the source code plus the results of all analysis. There are more details provided as reported in the paper. The most important files are:
 -- *analysis* -- *analysis_01*: initial exploration of data set  
@@ -29,5 +29,5 @@ There are some *subfolders* in `analysis`(of minor importance):
 
 Please refer to the paper for details on the background, rationale, and objective of the analysis.
 
-Please note that **no data** is provided in this repository. Please contact the corresponding author (<fabian.lenhard@ki.se>) for any queries in this regard.
+Please note that **no data** is provided in this repository. Please contact the corresponding author [Fabian Lenhard](<fabian.lenhard@ki.se>) for any queries in this regard.
 
