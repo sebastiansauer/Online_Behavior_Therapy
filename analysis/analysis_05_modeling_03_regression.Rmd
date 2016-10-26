@@ -784,7 +784,7 @@ Let's look at *adjusted* $R^2$.
 ```{r}
 plot(LM_regsubsets_summary$adjr2, type = "l")
 nr_predictors_adjr2 <- which.max(LM_regsubsets_summary$adjr2)
-points(nr_predictors, LM_regsubsets_summary$adjr2[nr_predictors_adjr2], col = "red", cex = 2, pch = 20)
+points(nr_predictors_adjr2, LM_regsubsets_summary$adjr2[nr_predictors_adjr2], col = "red", cex = 2, pch = 20)
 ```
 
 That is, the model suggests `r nr_predictors_adjr2` predictors to be included.
@@ -794,7 +794,7 @@ Let's look at $BIC$.
 ```{r}
 plot(LM_regsubsets_summary$bic, type = "l")
 nr_predictors_bic <- which.min(LM_regsubsets_summary$bic)
-points(nr_predictors, LM_regsubsets_summary$bic[nr_predictors_bic], col = "red", cex = 2, pch = 20)
+points(nr_predictors_bic, LM_regsubsets_summary$bic[nr_predictors_bic], col = "red", cex = 2, pch = 20)
 ```
 
 
@@ -807,7 +807,7 @@ $BIC$ is more strict in terms of allowing predictors to enter the model. So let'
 ```{r}
 plot(LM_regsubsets_summary$cp, type = "l")
 nr_predictors_cp <- which.min(LM_regsubsets_summary$cp)
-points(nr_predictors, LM_regsubsets_summary$cp[nr_predictors_cp], col = "red", cex = 2, pch = 20)
+points(nr_predictors_cp, LM_regsubsets_summary$cp[nr_predictors_cp], col = "red", cex = 2, pch = 20)
 ```
 
 
@@ -816,7 +816,7 @@ That is, the model suggests `r nr_predictors_cp` predictors to be included.
 Ok, so let's stick to `r nr_predictors_adjr2` predictors. These are:
 
 ```{r}
-coef(LM_regsubsets, nr_predictors)[-1]
+coef(LM_regsubsets, nr_predictors_adjr2)[-1]
 best_preds <- names(coef(LM_regsubsets, nr_predictors_adjr2))[-1]  # first is "intercept"
 
 ```
