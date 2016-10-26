@@ -1,0 +1,16 @@
+---
+title: "dummy"
+author: "Sebastian Sauer"
+date: "28 Juli 2016"
+output: html_document
+---
+
+```{r}
+
+knitr::opts_knit$set(base.dir = "..", output.dir = "../reports")
+```
+
+```{r}
+plot(mtcars$hp)
+```
+

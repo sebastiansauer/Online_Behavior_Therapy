@@ -84,8 +84,6 @@ is_binary <- function(var){
 }
 
 
-
-
 # change strange factor levels to well-behaved ones
 if ("contact" %in% names(data_regr)) data_regr$contact <- dplyr::recode_factor(data_regr$contact, `Self-referral` = "0", `CAMHS referral` = "1")
 
@@ -104,7 +102,7 @@ if ("ID" %in% names(data_regr)) data_regr <- data_regr %>% dplyr::select(-ID)  #
 
 
 
-load(file = "mod_results.Rda")
+load(file = "data_objects/mod_results.Rda")
 
 ```
 
@@ -786,7 +784,7 @@ Let's look at *adjusted* $R^2$.
 ```{r}
 plot(LM_regsubsets_summary$adjr2, type = "l")
 nr_predictors_adjr2 <- which.max(LM_regsubsets_summary$adjr2)
-points(nr_predictors, LM_regsubsets_summary$adjr2[nr_predictors], col = "red", cex = 2, pch = 20)
+points(nr_predictors, LM_regsubsets_summary$adjr2[nr_predictors_adjr2], col = "red", cex = 2, pch = 20)
 ```
 
 That is, the model suggests `r nr_predictors_adjr2` predictors to be included.
@@ -796,7 +794,7 @@ Let's look at $BIC$.
 ```{r}
 plot(LM_regsubsets_summary$bic, type = "l")
 nr_predictors_bic <- which.min(LM_regsubsets_summary$bic)
-points(nr_predictors, LM_regsubsets_summary$bic[nr_predictors], col = "red", cex = 2, pch = 20)
+points(nr_predictors, LM_regsubsets_summary$bic[nr_predictors_bic], col = "red", cex = 2, pch = 20)
 ```
 
 
@@ -809,7 +807,7 @@ $BIC$ is more strict in terms of allowing predictors to enter the model. So let'
 ```{r}
 plot(LM_regsubsets_summary$cp, type = "l")
 nr_predictors_cp <- which.min(LM_regsubsets_summary$cp)
-points(nr_predictors, LM_regsubsets_summary$cp[nr_predictors], col = "red", cex = 2, pch = 20)
+points(nr_predictors, LM_regsubsets_summary$cp[nr_predictors_cp], col = "red", cex = 2, pch = 20)
 ```
 
 
@@ -916,6 +914,7 @@ Ok, that could be message: Boosting appears to work, and we have thus identified
 
 # Evaluating variable importance
 
+## Variable importance for regression models
 Finally, let's combine model results to derive the importance of variables after having fitted all these models.
 
 
@@ -980,3 +979,13 @@ varimp_intersect
 ```
 
 These are (this is) the variable(s) that where among the 10 most important predictors in the two (best performing) models. Let's take them as our "best guess" as the most important ones.
+
+
+## Variable importance intersection of both regression and classification models
+Finally, let's compare which predictors were deemd importance in *both* the regression and the classification models.
+
+```{r}
+load("data_objects/important_predictors.Rda")
+
+```
+

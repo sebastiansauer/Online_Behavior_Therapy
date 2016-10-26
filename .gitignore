@@ -4,3 +4,6 @@ raw_data/
 .Rhistory
 __Archive__/
 *.Rproj
+cache/
+dummy_files/
+Untitled_files/

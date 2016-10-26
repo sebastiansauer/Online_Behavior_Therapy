@@ -1,7 +1,7 @@
 ---
 title: "modeling2: Flexible models for classification"
 author: "Sebastian Sauer"
-date: "`r Sys.time()`"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: 
   html_document:
     code_folding: hide
@@ -884,7 +884,7 @@ grid.arrange(es_plot_1, es_plot_2)
 ```
 
 
-## Summary over relevant predictors
+# Summary over relevant predictors
 Let's put together which predictors were deemed relevant by the different models:
 
 - Linear model with all predictors: negative Kappa, not included
@@ -896,16 +896,41 @@ Let's put together which predictors were deemed relevant by the different models
 - Support Vector Machines model 1 (80/20 sample dividing)
 - Support Vector Machines model 2 (60/40 sample dividing)
 
+## Overview on all relevant predictors
+
+First, let's look at the "important predictors" as identified by all classifiation models:
+```{r}
+important_predictors
+```
+
+## Count frequency of predictors
+
+How often was each predictor mentioned in the list of frequent predictors?
 
 ```{r}
-do.call(intersect(important_predictors))
+unlist(important_predictors) %>% 
+  table %>% 
+  sort(decreasing = TRUE) %>% 
+  tibble(predictor = names(.), freq = as.vector(.)) -> important_predictors$overview
+
+
+important_predictors$overview %>% 
+  ggplot(aes(x = reorder(predictor, freq), y = freq)) + 
+  geom_bar(stat="identity") +
+  coord_flip() +
+  xlab("predictor") +
+  ylab("frequency")
+  
+
 ```
 
 
 
 
-Don't forget to save results to disk...
+## Clean-up
+Don't forget to save results to disk (to the right folder)...
 
 ```{r}
-save(mod_results, file = "mod_results.Rda")
+save(mod_results, file = "data_objects/mod_results.Rda")
+save(important_predictors, file = "data_objects/important_predictors.Rda")
 ```
