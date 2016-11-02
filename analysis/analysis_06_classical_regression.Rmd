@@ -1,0 +1,273 @@
+---
+title: "Classical linear regression"
+author: "Sebastian Sauer"
+date: "30 10 2016"
+output: html_document
+---
+
+
+# Setup
+
+```{r load_knitr}
+library(knitr)
+```
+
+
+```{r knitr_opts}
+
+opts_knit$set(root.dir=normalizePath('../'))
+
+
+knitr::opts_chunk$set(echo = TRUE,
+                      cache = TRUE,
+                      warning = FALSE,
+                      message = FALSE)
+```
+
+
+Load packages.
+
+
+```{r libs, include=FALSE}
+
+source("analysis/functions/load_libs.R")
+```
+
+
+Define results variables.
+
+```{r results_var}
+
+# results/ variables
+mod_results_regression <- list()
+regr_varimp <- list()  # var.imp only
+```
+
+
+
+Prepare overhead.
+
+```{r overhead}
+registerDoMC(cores = 4)
+```
+
+
+
+
+Play or work (test it and recompute vs. rely on cached data)
+
+```{r play_or_work, echo = TRUE}
+recompute <- TRUE
+test_it <- FALSE
+
+write_to_file <- FALSE
+
+```
+
+
+
+Define paths.
+
+```{r paths}
+source("analysis/functions/paths.R")
+```
+
+Load data and data-objects.
+
+
+```{r read_data}
+data <- read_csv("raw_data/data_mod3.csv")  
+
+load(file = "data_objects/mod_results.Rda")
+load("data_objects/important_predictors.Rda")
+load("data_objects/important_predictors_overview.Rda")
+
+# attr(data, spec) <- ""
+# attributes(data)
+```
+
+
+Dimension of data:
+
+Rows: `r dim(data)[1]`.
+Cols: `r dim(data)[2]`.
+
+
+# Simple non-sense regression models
+
+If the number of predictors (p) equals the number of cases (n), then $R^2$ will approach 1. Hence, model fit *per se* is of limited or no value for deciding on the vlaue of a model.
+
+
+
+Check if *numeric* outcome variables is present in data frame. 
+Check if *binary* outcome variable is present in data frame.
+
+```{r detect_outcome_vars}
+str_detect(names(data), "CYBOCS") %>% any %>% expect_true
+
+str_detect(names(data), "responder_3m") %>% any %>% expect_true
+
+```
+
+
+
+## Numeric outcome
+
+Outcome: `CYBOCS_3m`.
+
+```{r nonsense_lm1}
+data %>% 
+ sample_n(45, replace = FALSE) %>% 
+  na.omit -> data2
+
+
+
+if ("responder_3m_f" %in% names(data)) {
+  dplyr::select(data2, -responder_3m_f) -> data2}
+  
+
+lm1 <- lm(CYBOCS_3m ~ ., data = data2)  
+summary(lm1)
+```
+
+$R^2$ of this model is: `r summary(lm1)$r.squared`.
+
+## Binary regression models
+Outcome: `responder_3m_f`.
+
+```{r nonsense_lm2}
+data %>% 
+ sample_n(45, replace = FALSE) %>% 
+  na.omit -> data2
+
+
+if ("CYBOCS_3m" %in% names(data)) {
+  dplyr::select(data2, -CYBOCS_3m) -> data2}
+  
+
+lm2 <- lm(responder_3m_f ~ ., data = data2)  
+summary(lm1)
+```
+
+
+$R^2$ of this model is: `r summary(lm2)$r.squared`.
+
+
+# Bivariate variable selection models
+
+Now, let's take the *full* sample, and check whether/how strong each predictor is correlated with the (metric) outcome. Those predictors will be used for the predicting the outcome in the next step.
+
+```{r univariate_feature_selection}
+data %>% 
+  dplyr::select(-c(responder_3m_f, CYBOCS_3m)) %>% 
+  map(~lm(data$CYBOCS_3m ~ .x, data = data)) %>% 
+  map(summary) %>% 
+  map("coefficients") %>% 
+  map_dbl(8) %>% 
+  tidy %>% 
+  dplyr::rename(pvalue = x) %>% 
+  dplyr::arrange(pvalue)  -> mod_results$classical_01$univariate_lm_selection
+
+
+# rename(p.value = x)
+
+kable(mod_results$classical_01$univariate_lm_selectio)
+```
+
+According to this reasoning, we should retain the following variables (p < .05):
+
+
+```{r lm1_signif_prdictors}
+mod_results$classical_01$univariate_lm_selection %>% 
+  filter(pvalue < .05) -> mod_results$classical_01$univariate_lm_selection_signif
+  
+kable(mod_results$classical_01$univariate_lm_selection_signif)
+```
+
+In sum, `r nrow(mod_results$classical_01$univariate_lm_selection_signif)` variables were chosen. 
+
+However, I doubt that this procedure is the most advisable: This procedure is prone to overfitting.
+
+
+### Run regression with univariate predictor selection
+
+We take these predictors (which showed a statistical significant assocation with the outcome in bivariate regressions), and submit them to a multivariate regression.
+
+```{r classical_lm1_results}
+
+data %>% 
+  dplyr::select(one_of(mod_results$classical_01$univariate_lm_selection_signif$names)) -> data_regr_univar_signif
+
+lm(data$CYBOCS_3m ~ . , data = data_regr_univar_signif) -> univariate_lm1
+
+
+univariate_lm1 %>% 
+  summary %>% 
+  tidy %>% 
+  dplyr::rename(predictor = term, b = estimate, SE = std.error, T = statistic, p = p.value) %>% 
+  mutate_if(is.numeric, round, digits = 3) %>% 
+  arrange(p) ->  mod_results$classical_01$lm1_tidy
+
+
+
+mod_results$classical_01$lm1_tidy %>% 
+  kable
+
+
+```
+
+The same table, somewhat more beautiful:
+
+```{r lm1_stargazer, results = "asis"}
+stargazer(mod_results$classical_01$lm1_tidy, type = "html")
+
+```
+
+
+Let's have a look at the predictors which reached statistical significance:
+
+```{r lm1_results_signif_only}
+univariate_lm1 %>% 
+  summary %>% 
+  tidy %>% 
+  filter(p.value < .05) %>% 
+  mutate_if(is.numeric, round, digits = 2) -> mod_results$glmfit1$signif_preds
+
+mod_results$glmfit1$signif_preds %>% 
+  kable
+
+```
+
+
+Adjusted $R^2$ of the whole dataset is:
+
+```{r}
+summary(univariate_lm1)$adj.r.squared
+```
+
+
+Let's take the adjusted R squared of the test sample with one predictor as the variable importance of that predictor.
+
+```{r lm1_varimp}
+
+mod_results$classical_01$signif_preds$rank <- min_rank(mod_results$classical_01$signif_preds$p)
+
+tibble(
+  name =  mod_results$classical_01$signif_preds$term,
+  value = mod_results$classical_01$signif_preds$p.value,
+  rank = min_rank(mod_results$classical_01$signif_preds$p.value)
+) -> regr_varimp$classical_lm1
+
+
+# 
+# 
+# mod_results$glmfit1$signif_preds %>% 
+#   filter(term != "(Intercept)") %>% 
+#   dplyr::select(term, statistic) %>% 
+#   dplyr::rename(name = term, value = statistic) %>% 
+#   mutate(rank = min_rank(desc(value))) -> regr_varimp$LM_univariate
+
+```
+
+
+

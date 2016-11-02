@@ -32,6 +32,7 @@ library(ggplot2) # plotting
 library(tibble) # tibble
 library(dplyr) # data wrangling
 library(purrr)  # functional programming
+library(corrr)  # correlation helper
 
 
 
@@ -60,7 +61,7 @@ registerDoMC(cores = 4)
 Define whether we work.
 ```{r do_we_work}
 write_to_file <- TRUE
-recompute <- TRUE
+recompute <- FALSE
 test_it <- TRUE
 ```
 
@@ -215,7 +216,7 @@ Only top-5 shown.
 Let's look at McFadden's pseudo R^2. Note that we here too have to fit the model using the train sample, but judge perfomance on the test sample. 
 
 ```{r glmfitpR2, warning = TRUE, echo = TRUE, message = TRUE}
-glmfit1 <- glm(responder_3m_f ~ ., 
+glmfit1 <- glm(responder_3m_f ~ .,
                data = train_sample,
                family = "binomial",
                control = list(maxit = 50))
@@ -296,6 +297,57 @@ mod_results$glmfit2$name <- "glmfit2"
 
 
 Kappa was negative. We should not consider this model further.
+
+## Linear model with univariate feature selection
+
+The idea here is: Submit all variables to a multiple regression where the t-Test shows "substantial differences" with the outcome groups.
+
+```{r glmfit3_univariate_feature_selection, warning = FALSE, message = TRUE}
+
+
+data_glm3 <- dplyr::select(train_sample, yearswithOCD, OCDonset, CGI_S_pre, CYBOCS_pre_avoid, responder_3m_f)
+
+expect_true(is.factor(train_sample$responder_3m_f))
+
+glmfit3 <- do_glmfit1(data_df = data_glm3)
+summary(glmfit3)
+print(glmfit3)
+confusionMatrix(glmfit3)
+
+
+mod_results$glmfit3 <- save_model_results(glmfit3)
+
+```
+
+Kappa was at par with chance level. The model was not successful.
+
+Let's look at variable importance:
+
+```{r lm3_varimp}
+
+# varImp(glmfit3)
+
+mod_results$glmfit3$varimp[[1]] %>% 
+  as_tibble %>% 
+  #dplyr::select(everything()) %>% 
+  rownames_to_column %>% 
+  arrange(desc(Overall))%>% 
+  top_n(5) %>% 
+  kable
+```
+
+
+And what about R^2 in the train sample?
+
+```{r glmfitpR3, warning = TRUE, echo = TRUE, message = TRUE}
+glmfit3 <- glm(responder_3m_f ~ ., 
+               data = data_glm3,
+               family = "binomial",
+               control = list(maxit = 50))
+print(pR2(glmfit3))
+```
+
+Quite ok.
 
 
 ## Best subsets regression
@@ -431,6 +483,7 @@ glmfit4_coefs$predictors
 
 ```
 
+Note that the log odds are given by `glm` in R.
 
 Accuracy as measured by Cohen's Kappa in **train** sample is
 

@@ -908,18 +908,21 @@ important_predictors
 How often was each predictor mentioned in the list of frequent predictors?
 
 ```{r}
+
+
 unlist(important_predictors) %>% 
   table %>% 
   sort(decreasing = TRUE) %>% 
-  tibble(predictor = names(.), freq = as.vector(.)) -> important_predictors$overview
+  tibble(predictor = names(.), freq = as.vector(.)) -> important_predictors_overview
 
 
-important_predictors$overview %>% 
+important_predictors_overview %>% 
   ggplot(aes(x = reorder(predictor, freq), y = freq)) + 
   geom_bar(stat="identity") +
   coord_flip() +
   xlab("predictor") +
-  ylab("frequency")
+  ylab("frequency") +
+  ggtitle("binary outcome")
   
 
 ```
@@ -933,4 +936,5 @@ Don't forget to save results to disk (to the right folder)...
 ```{r}
 save(mod_results, file = "data_objects/mod_results.Rda")
 save(important_predictors, file = "data_objects/important_predictors.Rda")
+save(important_predictors_overview, file = "data_objects/important_predictors_overview.Rda")
 ```

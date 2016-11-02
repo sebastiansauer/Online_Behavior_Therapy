@@ -30,7 +30,7 @@ opts_knit$set(root.dir=normalizePath('../'))
 
 
 knitr::opts_chunk$set(echo = TRUE,
-                      cache = FALSE,
+                      cache = TRUE,
                       warning = FALSE,
                       message = FALSE)
 ```
@@ -620,7 +620,7 @@ train_sample %>%
 
 We could also argue that, FWIW, we would want to guide our predictor (feature) selection by significance of p-values. At the least, this gives us simple guidance as to which variables to retain. Let's see:
 
-```{r}
+```{r univariate_feature_selection}
 train_sample %>% 
   dplyr::select(-CYBOCS_3m) %>% 
   map(~lm(train_sample$CYBOCS_3m ~ .x, data = train_sample)) %>% 
@@ -811,7 +811,7 @@ points(nr_predictors_cp, LM_regsubsets_summary$cp[nr_predictors_cp], col = "red"
 ```
 
 
-That is, the model suggests `r nr_predictors_cp` predictors to be included.
+That is, the model suggests `r nr_predictors_adjr2` predictors to be included.
 
 Ok, so let's stick to `r nr_predictors_adjr2` predictors. These are:
 
@@ -862,7 +862,7 @@ predict.regsubsets = function(object, newdata, id, ...) {
         mat[, xvars] %*% coefi
 }  # credit to: https://github.com/yufree/democode/blob/master/rml/predict.regsubsets.R
 
-LM_regsubsets_predict <- predict(LM_regsubsets, newdata = test_sample, id = nr_predictors)
+LM_regsubsets_predict <- predict(LM_regsubsets, newdata = test_sample, id = nr_predictors_adjr2)
 # str(dummy_model2)
 summary(LM_regsubsets_predict)
   
@@ -898,24 +898,24 @@ regr_results %>%
 ```
 
 
-The results in sum indicate that the Boosting model is the by far best. Let's look again at the predictors which are thought to be the most important according to this model.
+The results in sum indicate that the Random Forest model is best, followed by the Lasso(s). Let's look again at the predictors which are thought to be the most important according to this model. `SVM` and `LM_regsubsets` performed poorly. These latter models should not be considered when deriving important predictors.
 
+Best model is: `r regr_results$model[1]`. And its important predictors are:
 ```{r}
-print(gbm1_varimp)
-plot(gbm1_varimp)
+print(rf1_varimp)
+plot(rf1_varimp)
 
 ```
 
 
-After the first 5 predictors there curve appears to flatten down (like a "scree"). Following this reasoning, let's extract the 5 most important predictors.
+After the first 5 predictors the curve appears to flatten down (like a "scree"). Following this reasoning, let's extract the 5 most important predictors.
 
-Ok, that could be message: Boosting appears to work, and we have thus identified some variables which appear predictive for the outcome.
 
 
 # Evaluating variable importance
 
 ## Variable importance for regression models
-Finally, let's combine model results to derive the importance of variables after having fitted all these models.
+Finally, let's combine all model results to derive the importance of variables after having fitted all these models.
 
 
 Put the list elements with the var.imp. data in one data frame:
@@ -934,7 +934,7 @@ kable(varimp_all)
 ```
 
 
-Let's pick the two most successful models, and let's only consider the variables from those models.
+Let's pick the three most successful models, and let's only consider the variables from those models.
 
 ```{r best_two_models}
 
@@ -942,50 +942,108 @@ best_regr_models <- vector()
 
 best_regr_models[1] <- regr_results$model[1] 
 best_regr_models[2] <- regr_results$model[2] 
+best_regr_models[3] <- regr_results$model[3] 
+
 
 ```
 
-So the best two models were `r best_regr_models`.
+So the best three models were `r best_regr_models`.
 
-Now let's look at the variable importance measures from these two variables.
+Now let's look at the variable importance measures from these models
 
 ```{r}
+
+varimp_best <- list()
 
 varimp_all %>% 
   mutate(model = tolower(model)) %>% 
   filter(str_detect(model, tolower(regr_results$model[1]))) %>% 
-  top_n(-10) -> varimp_best_1
+  top_n(-10) -> varimp_best[[1]]
 
-kable(varimp_best_1)
+kable(varimp_best[[1]])
+
+
+# in string "lasso_1" kick out all non characters, and keep only characters, e., "alpha"
+varimp_all %>% 
+  mutate(model = tolower(model)) %>% 
+  filter(str_detect(model, tolower(str_extract(regr_results$model[2], "[:alpha:]*")))) %>% 
+  top_n(-10) -> varimp_best[[2]]
+  
+  
+kable(varimp_best[[2]])
 
 
 varimp_all %>% 
   mutate(model = tolower(model)) %>% 
-  filter(str_detect(model, tolower(regr_results$model[2]))) %>% 
-  top_n(-10) -> varimp_best_2
+  filter(str_detect(model, tolower(str_extract(regr_results$model[3], "[:alpha:]*")))) %>% 
+  top_n(-10) -> varimp_best[[3]]
   
   
-kable(varimp_best_2)
+kable(varimp_best[[3]])
 
 ```
 
-What predictors appear in both "hit lists"?
 
-```{r varimp_intersect}
+## Hitlist of predictors
+Let's see which predictors are how frequent.
+```{r varimp_top_of_top}
 
-base::intersect(varimp_best_1$name, varimp_best_2$name) -> varimp_intersect
+varimp_top <- do.call(rbind.data.frame, varimp_best)
 
-varimp_intersect
+
+varimp_top$name %>% 
+  table %>% 
+   sort(decreasing = TRUE) %>% 
+   tibble(predictor = names(.), freq = as.vector(.)) -> varimp_top_of_top
+
+
+kable(varimp_top_of_top)
+
+
+varimp_top_of_top %>% 
+  ggplot(aes(x = reorder(predictor, freq), y = freq)) + 
+  geom_bar(stat="identity") +
+  coord_flip() +
+  xlab("predictor") +
+  ylab("frequency") +
+  ggtitle("outcome: CYBOCS_3m")
+
 ```
 
-These are (this is) the variable(s) that where among the 10 most important predictors in the two (best performing) models. Let's take them as our "best guess" as the most important ones.
+These are the variable that where among the 10 most important predictors in the three (best performing) models. Let's take them as our "best guess" as the most important ones.
 
 
 ## Variable importance intersection of both regression and classification models
 Finally, let's compare which predictors were deemd importance in *both* the regression and the classification models.
 
-```{r}
+```{r load_important_predictors}
 load("data_objects/important_predictors.Rda")
+load("data_objects/important_predictors_overview.Rda")
+
+
+varimp_class_and_regr <- full_join(important_predictors_overview, varimp_top_of_top, by = "predictor")
+
+varimp_class_and_regr %>% 
+  dplyr::select(predictor, freq.x, freq.y) %>% 
+  mutate_each(funs(ifelse(is.na(.), 0, .))) %>% 
+  mutate(freq_total = freq.x + freq.y) %>% 
+  dplyr::rename(classific_importance = freq.x, regression_importance = freq.y, importance_total = freq_total) %>% 
+  arrange(-importance_total) -> varimp_class_and_regr
+
+
+varimp_class_and_regr %>% 
+   kable
+
+varimp_class_and_regr %>% 
+  ggplot(aes(x = reorder(predictor, importance_total), y = importance_total)) + 
+  geom_bar(stat="identity") +
+  coord_flip() +
+  xlab("predictor") +
+  ylab("frequency") +
+  ggtitle("all statistical learning models")
 
 ```
+
+In sum, the number of relevant predictors was `r nrow(varimp_class_and_regr)` (totailing classification and regression).
+
 
