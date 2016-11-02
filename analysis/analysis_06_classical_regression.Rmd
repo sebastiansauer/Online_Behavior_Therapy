@@ -33,7 +33,7 @@ knitr::opts_chunk$set(echo = TRUE,
 Load packages.
 
 
-```{r libs, include=FALSE}
+```{r libs}
 
 source("analysis/functions/load_libs.R")
 ```
@@ -98,11 +98,6 @@ Rows: `r dim(data)[1]`.
 Cols: `r dim(data)[2]`.
 
 
-# Simple non-sense regression models
-
-If the number of predictors (p) equals the number of cases (n), then $R^2$ will approach 1. Hence, model fit *per se* is of limited or no value for deciding on the vlaue of a model.
-
-
 
 Check if *numeric* outcome variables is present in data frame. 
 Check if *binary* outcome variable is present in data frame.
@@ -113,6 +108,13 @@ str_detect(names(data), "CYBOCS") %>% any %>% expect_true
 str_detect(names(data), "responder_3m") %>% any %>% expect_true
 
 ```
+
+
+# Simple non-sense regression models
+
+If the number of predictors (p) equals the number of cases (n), then $R^2$ will approach 1. Hence, model fit *per se* is of limited or no value for deciding on the vlaue of a model.
+
+
 
 
 
@@ -150,12 +152,22 @@ if ("CYBOCS_3m" %in% names(data)) {
   dplyr::select(data2, -CYBOCS_3m) -> data2}
   
 
-lm2 <- lm(responder_3m_f ~ ., data = data2)  
-summary(lm1)
+glm(responder_3m_f ~ ., data = data2, familiy = "binomial") %>% summary
 ```
 
 
-$R^2$ of this model is: `r summary(lm2)$r.squared`.
+$R^2$ of this model is: 
+
+```{r rsquared__nonsense_model}
+glm(data2$responder_3m_f ~ .,
+               data = data2,
+               family = "binomial",
+               control = list(maxit = 50)) %>% 
+  pR2(.) %>% 
+  print
+
+```
+
 
 
 # Bivariate variable selection models (regression/ numeric outcome)
@@ -171,7 +183,7 @@ data %>%
   map(~lm(data$CYBOCS_3m ~ .x, data = data)) %>% 
   map(summary) %>% 
   map("coefficients") %>% 
-  map_dbl(8) %>% 
+  map_dbl(8) %>% # 8th value is p-value
   tidy %>% 
   dplyr::rename(pvalue = x) %>% 
   dplyr::arrange(pvalue)  -> mod_results$classical_01$univariate_lm_selection
@@ -384,7 +396,7 @@ mod_results$classical_02$signif_preds %>%
 
 *Adjusted* $R^2$ of the *whole* dataset is:
 
-```{r adj_rsqaured_glm2}
+```{r adj_rsquared_glm2}
 
 glm(data$responder_3m_f ~ .,
                data = data_regr_univar_signif,
