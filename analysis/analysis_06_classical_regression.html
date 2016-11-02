@@ -106,6 +106,16 @@ $(document).ready(function () {
 </script>
 
 <!-- code folding -->
+<style type="text/css">
+.code-folding-btn { margin-bottom: -22px; }
+.code-folding-btn.collapsed { margin-bottom: 4px; }
+</style>
+<script src="data:application/x-javascript;base64,CndpbmRvdy5pbml0aWFsaXplQ29kZUZvbGRpbmcgPSBmdW5jdGlvbihzaG93KSB7CgogIC8vIGhhbmRsZXJzIGZvciBzaG93LWFsbCBhbmQgaGlkZSBhbGwKICAkKCIjcm1kLXNob3ctYWxsLWNvZGUiKS5jbGljayhmdW5jdGlvbigpIHsKICAgICQoJ2Rpdi5yLWNvZGUtY29sbGFwc2UnKS5lYWNoKGZ1bmN0aW9uKCkgewogICAgICAkKHRoaXMpLmNvbGxhcHNlKCdzaG93Jyk7CiAgICB9KTsKICB9KTsKICAkKCIjcm1kLWhpZGUtYWxsLWNvZGUiKS5jbGljayhmdW5jdGlvbigpIHsKICAgICQoJ2Rpdi5yLWNvZGUtY29sbGFwc2UnKS5lYWNoKGZ1bmN0aW9uKCkgewogICAgICAkKHRoaXMpLmNvbGxhcHNlKCdoaWRlJyk7CiAgICB9KTsKICB9KTsKCiAgLy8gaW5kZXggZm9yIHVuaXF1ZSBjb2RlIGVsZW1lbnQgaWRzCiAgdmFyIGN1cnJlbnRJbmRleCA9IDE7CgogIC8vIHNlbGVjdCBhbGwgUiBjb2RlIGJsb2NrcwogIHZhciByQ29kZUJsb2NrcyA9ICQoJ3ByZS5yJyk7CiAgckNvZGVCbG9ja3MuZWFjaChmdW5jdGlvbigpIHsKCiAgICAvLyBjcmVhdGUgYSBjb2xsYXBzYWJsZSBkaXYgdG8gd3JhcCB0aGUgY29kZSBpbgogICAgdmFyIGRpdiA9ICQoJzxkaXYgY2xhc3M9ImNvbGxhcHNlIHItY29kZS1jb2xsYXBzZSI+PC9kaXY+Jyk7CiAgICBpZiAoc2hvdykKICAgICAgZGl2LmFkZENsYXNzKCdpbicpOwogICAgdmFyIGlkID0gJ3Jjb2RlLTY0M0UwRjM2JyArIGN1cnJlbnRJbmRleCsrOwogICAgZGl2LmF0dHIoJ2lkJywgaWQpOwogICAgJCh0aGlzKS5iZWZvcmUoZGl2KTsKICAgICQodGhpcykuZGV0YWNoKCkuYXBwZW5kVG8oZGl2KTsKCiAgICAvLyBhZGQgYSBzaG93IGNvZGUgYnV0dG9uIHJpZ2h0IGFib3ZlCiAgICB2YXIgc2hvd0NvZGVUZXh0ID0gJCgnPHNwYW4+JyArIChzaG93ID8gJ0hpZGUnIDogJ0NvZGUnKSArICc8L3NwYW4+Jyk7CiAgICB2YXIgc2hvd0NvZGVCdXR0b24gPSAkKCc8YnV0dG9uIHR5cGU9ImJ1dHRvbiIgY2xhc3M9ImJ0biBidG4tZGVmYXVsdCBidG4teHMgY29kZS1mb2xkaW5nLWJ0biBwdWxsLXJpZ2h0Ij48L2J1dHRvbj4nKTsKICAgIHNob3dDb2RlQnV0dG9uLmFwcGVuZChzaG93Q29kZVRleHQpOwogICAgc2hvd0NvZGVCdXR0b24KICAgICAgICAuYXR0cignZGF0YS10b2dnbGUnLCAnY29sbGFwc2UnKQogICAgICAgIC5hdHRyKCdkYXRhLXRhcmdldCcsICcjJyArIGlkKQogICAgICAgIC5hdHRyKCdhcmlhLWV4cGFuZGVkJywgc2hvdykKICAgICAgICAuYXR0cignYXJpYS1jb250cm9scycsIGlkKTsKCiAgICB2YXIgYnV0dG9uUm93ID0gJCgnPGRpdiBjbGFzcz0icm93Ij48L2Rpdj4nKTsKICAgIHZhciBidXR0b25Db2wgPSAkKCc8ZGl2IGNsYXNzPSJjb2wtbWQtMTIiPjwvZGl2PicpOwoKICAgIGJ1dHRvbkNvbC5hcHBlbmQoc2hvd0NvZGVCdXR0b24pOwogICAgYnV0dG9uUm93LmFwcGVuZChidXR0b25Db2wpOwoKICAgIGRpdi5iZWZvcmUoYnV0dG9uUm93KTsKCiAgICAvLyB1cGRhdGUgc3RhdGUgb2YgYnV0dG9uIG9uIHNob3cvaGlkZQogICAgZGl2Lm9uKCdoaWRkZW4uYnMuY29sbGFwc2UnLCBmdW5jdGlvbiAoKSB7CiAgICAgIHNob3dDb2RlVGV4dC50ZXh0KCdDb2RlJyk7CiAgICB9KTsKICAgIGRpdi5vbignc2hvdy5icy5jb2xsYXBzZScsIGZ1bmN0aW9uICgpIHsKICAgICAgc2hvd0NvZGVUZXh0LnRleHQoJ0hpZGUnKTsKICAgIH0pOwogIH0pOwoKfQo="></script>
+<script>
+$(document).ready(function () {
+  window.initializeCodeFolding("hide" === "show");
+});
+</script>
 
 
 
@@ -114,17 +124,47 @@ $(document).ready(function () {
 
 <div class="fluid-row" id="header">
 
+<div class="btn-group pull-right">
+<button type="button" class="btn btn-default btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span>Code</span> <span class="caret"></span></button>
+<ul class="dropdown-menu" style="min-width: 50px;">
+<li><a id="rmd-show-all-code" href="#">Show All Code</a></li>
+<li><a id="rmd-hide-all-code" href="#">Hide All Code</a></li>
+</ul>
+</div>
+
 
 
 <h1 class="title toc-ignore">Classical linear regression</h1>
 <h4 class="author"><em>Sebastian Sauer</em></h4>
-<h4 class="date"><em>30 10 2016</em></h4>
+<h4 class="date"><em>2016-11-02 23:37:08</em></h4>
 
 </div>
 
+<div id="TOC">
+<ul>
+<li><a href="#setup"><span class="toc-section-number">1</span> Setup</a></li>
+<li><a href="#simple-non-sense-regression-models"><span class="toc-section-number">2</span> Simple non-sense regression models</a><ul>
+<li><a href="#numeric-outcome"><span class="toc-section-number">2.1</span> Numeric outcome</a></li>
+<li><a href="#binary-regression-models"><span class="toc-section-number">2.2</span> Binary regression models</a></li>
+</ul></li>
+<li><a href="#bivariate-variable-selection-models-regression-numeric-outcome"><span class="toc-section-number">3</span> Bivariate variable selection models (regression/ numeric outcome)</a><ul>
+<li><a href="#run-regression-with-univariate-predictor-selection"><span class="toc-section-number">3.1</span> Run regression with univariate predictor selection</a></li>
+<li><a href="#number-of-significant-predictors"><span class="toc-section-number">3.2</span> Number of significant predictors</a></li>
+<li><a href="#adj.-r-squared"><span class="toc-section-number">3.3</span> Adj. R squared</a></li>
+<li><a href="#variable-importance"><span class="toc-section-number">3.4</span> Variable importance</a></li>
+</ul></li>
+<li><a href="#bivariate-variable-selection-models-classification-binary-outcome"><span class="toc-section-number">4</span> Bivariate variable selection models (classification/ binary outcome)</a><ul>
+<li><a href="#run-classification-with-univariate-predictor-selection"><span class="toc-section-number">4.1</span> Run classification with univariate predictor selection</a></li>
+<li><a href="#number-of-significant-predictors-1"><span class="toc-section-number">4.2</span> Number of significant predictors</a></li>
+<li><a href="#adj.-r-squared-1"><span class="toc-section-number">4.3</span> Adj. R squared</a></li>
+<li><a href="#variable-importance-1"><span class="toc-section-number">4.4</span> Variable importance</a></li>
+</ul></li>
+<li><a href="#clean-up"><span class="toc-section-number">5</span> Clean-up</a></li>
+</ul>
+</div>
 
 <div id="setup" class="section level1">
-<h1>Setup</h1>
+<h1><span class="header-section-number">1</span> Setup</h1>
 <pre class="r"><code>library(knitr)</code></pre>
 <pre class="r"><code>opts_knit$set(root.dir=normalizePath('../'))
 
@@ -142,13 +182,17 @@ regr_varimp &lt;- list()  # var.imp only</code></pre>
 <pre class="r"><code>registerDoMC(cores = 4)</code></pre>
 <p>Play or work (test it and recompute vs. rely on cached data)</p>
 <pre class="r"><code>recompute &lt;- TRUE
-test_it &lt;- FALSE
+test_it &lt;- TRUE
 
 write_to_file &lt;- FALSE</code></pre>
 <p>Define paths.</p>
 <pre class="r"><code>source(&quot;analysis/functions/paths.R&quot;)</code></pre>
-<p>Load data.</p>
+<p>Load data and data-objects.</p>
 <pre class="r"><code>data &lt;- read_csv(&quot;raw_data/data_mod3.csv&quot;)  
+
+load(file = &quot;data_objects/mod_results.Rda&quot;)
+load(&quot;data_objects/important_predictors.Rda&quot;)
+load(&quot;data_objects/important_predictors_overview.Rda&quot;)
 
 # attr(data, spec) &lt;- &quot;&quot;
 # attributes(data)</code></pre>
@@ -156,14 +200,14 @@ write_to_file &lt;- FALSE</code></pre>
 <p>Rows: 61. Cols: 46.</p>
 </div>
 <div id="simple-non-sense-regression-models" class="section level1">
-<h1>Simple non-sense regression models</h1>
+<h1><span class="header-section-number">2</span> Simple non-sense regression models</h1>
 <p>If the number of predictors (p) equals the number of cases (n), then <span class="math inline">\(R^2\)</span> will approach 1. Hence, model fit <em>per se</em> is of limited or no value for deciding on the vlaue of a model.</p>
 <p>Check if <em>numeric</em> outcome variables is present in data frame. Check if <em>binary</em> outcome variable is present in data frame.</p>
 <pre class="r"><code>str_detect(names(data), &quot;CYBOCS&quot;) %&gt;% any %&gt;% expect_true
 
 str_detect(names(data), &quot;responder_3m&quot;) %&gt;% any %&gt;% expect_true</code></pre>
 <div id="numeric-outcome" class="section level2">
-<h2>Numeric outcome</h2>
+<h2><span class="header-section-number">2.1</span> Numeric outcome</h2>
 <p>Outcome: <code>CYBOCS_3m</code>.</p>
 <pre class="r"><code>data %&gt;% 
  sample_n(45, replace = FALSE) %&gt;% 
@@ -253,7 +297,7 @@ summary(lm1)</code></pre>
 <p><span class="math inline">\(R^2\)</span> of this model is: 0.9689637.</p>
 </div>
 <div id="binary-regression-models" class="section level2">
-<h2>Binary regression models</h2>
+<h2><span class="header-section-number">2.2</span> Binary regression models</h2>
 <p>Outcome: <code>responder_3m_f</code>.</p>
 <pre class="r"><code>data %&gt;% 
  sample_n(45, replace = FALSE) %&gt;% 
@@ -341,6 +385,1032 @@ summary(lm1)</code></pre>
 ## F-statistic: 0.7261 on 43 and 1 DF,  p-value: 0.753</code></pre>
 <p><span class="math inline">\(R^2\)</span> of this model is: 0.9919099.</p>
 </div>
+</div>
+<div id="bivariate-variable-selection-models-regression-numeric-outcome" class="section level1">
+<h1><span class="header-section-number">3</span> Bivariate variable selection models (regression/ numeric outcome)</h1>
+<p>Now, let’s take the <em>full</em> sample, and check whether/how strong each predictor is correlated with the (metric) outcome. Those predictors will be used for the predicting the outcome in the next step.</p>
+<p>As the sample size is low, it can be argued that it is better not to split up the sample, but to use some overfitting-aware measure on the performance of the whole sample. Adjusted <span class="math inline">\(R^2\)</span> would be some sensible measure.</p>
+<pre class="r"><code>data %&gt;% 
+  dplyr::select(-c(responder_3m_f, CYBOCS_3m)) %&gt;% 
+  map(~lm(data$CYBOCS_3m ~ .x, data = data)) %&gt;% 
+  map(summary) %&gt;% 
+  map(&quot;coefficients&quot;) %&gt;% 
+  map_dbl(8) %&gt;% 
+  tidy %&gt;% 
+  dplyr::rename(pvalue = x) %&gt;% 
+  dplyr::arrange(pvalue)  -&gt; mod_results$classical_01$univariate_lm_selection
+
+
+# rename(p.value = x)
+
+kable(mod_results$classical_01$univariate_lm_selectio)</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">names</th>
+<th align="right">pvalue</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">yearswithOCD</td>
+<td align="right">0.0002810</td>
+</tr>
+<tr class="even">
+<td align="left">OCD_treatm_expnone</td>
+<td align="right">0.0005732</td>
+</tr>
+<tr class="odd">
+<td align="left">CGI_S_pre</td>
+<td align="right">0.0008657</td>
+</tr>
+<tr class="even">
+<td align="left">CBT_OCD</td>
+<td align="right">0.0018604</td>
+</tr>
+<tr class="odd">
+<td align="left">ChOCI_R_P_sumimp_PRE</td>
+<td align="right">0.0039377</td>
+</tr>
+<tr class="even">
+<td align="left">EWSASP_sum_PRE</td>
+<td align="right">0.0041282</td>
+</tr>
+<tr class="odd">
+<td align="left">OCDonset</td>
+<td align="right">0.0049217</td>
+</tr>
+<tr class="even">
+<td align="left">SCAS_S_P_sum_PRE</td>
+<td align="right">0.0059556</td>
+</tr>
+<tr class="odd">
+<td align="left">ADHD</td>
+<td align="right">0.0254627</td>
+</tr>
+<tr class="even">
+<td align="left">ChOCI_R_C_sumimp_PRE</td>
+<td align="right">0.0294541</td>
+</tr>
+<tr class="odd">
+<td align="left">FAS_PR_sum_PRE</td>
+<td align="right">0.0315248</td>
+</tr>
+<tr class="even">
+<td align="left">CDI_S_sum_PRE</td>
+<td align="right">0.0322435</td>
+</tr>
+<tr class="odd">
+<td align="left">EWSASC_sum_PRE</td>
+<td align="right">0.0400821</td>
+</tr>
+<tr class="even">
+<td align="left">medication_yesno</td>
+<td align="right">0.0538589</td>
+</tr>
+<tr class="odd">
+<td align="left">medicationnone</td>
+<td align="right">0.0538589</td>
+</tr>
+<tr class="even">
+<td align="left">CYBOCS_pre_COMP</td>
+<td align="right">0.0566103</td>
+</tr>
+<tr class="odd">
+<td align="left">ChOCI_R_P_sumsym_PRE</td>
+<td align="right">0.0917844</td>
+</tr>
+<tr class="even">
+<td align="left">CYBOCS_pre_avoid</td>
+<td align="right">0.1108583</td>
+</tr>
+<tr class="odd">
+<td align="left">sexgirl</td>
+<td align="right">0.1316561</td>
+</tr>
+<tr class="even">
+<td align="left">age</td>
+<td align="right">0.1871957</td>
+</tr>
+<tr class="odd">
+<td align="left">Education_parentHigh.school</td>
+<td align="right">0.2267870</td>
+</tr>
+<tr class="even">
+<td align="left">checking</td>
+<td align="right">0.2543974</td>
+</tr>
+<tr class="odd">
+<td align="left">Education_parentUniversity</td>
+<td align="right">0.2581741</td>
+</tr>
+<tr class="even">
+<td align="left">symmetry</td>
+<td align="right">0.3654648</td>
+</tr>
+<tr class="odd">
+<td align="left">SocialPhob</td>
+<td align="right">0.3812254</td>
+</tr>
+<tr class="even">
+<td align="left">obsessions</td>
+<td align="right">0.3867943</td>
+</tr>
+<tr class="odd">
+<td align="left">Depression</td>
+<td align="right">0.4220645</td>
+</tr>
+<tr class="even">
+<td align="left">GAD</td>
+<td align="right">0.4294340</td>
+</tr>
+<tr class="odd">
+<td align="left">CYBOCS_pre_OBS</td>
+<td align="right">0.4314812</td>
+</tr>
+<tr class="even">
+<td align="left">BirthcountrySweden</td>
+<td align="right">0.4652936</td>
+</tr>
+<tr class="odd">
+<td align="left">ChOCI_R_C_sumsym_PRE</td>
+<td align="right">0.4798840</td>
+</tr>
+<tr class="even">
+<td align="left">SCAS_S_C_sum_PRE</td>
+<td align="right">0.5428201</td>
+</tr>
+<tr class="odd">
+<td align="left">medicationSSRI</td>
+<td align="right">0.5701560</td>
+</tr>
+<tr class="even">
+<td align="left">numberdiagnos</td>
+<td align="right">0.5718210</td>
+</tr>
+<tr class="odd">
+<td align="left">CYBOCS_pre_insight</td>
+<td align="right">0.5971117</td>
+</tr>
+<tr class="even">
+<td align="left">treatm_expnone</td>
+<td align="right">0.6406048</td>
+</tr>
+<tr class="odd">
+<td align="left">contamination</td>
+<td align="right">0.6510070</td>
+</tr>
+<tr class="even">
+<td align="left">SpecificPhob</td>
+<td align="right">0.7685558</td>
+</tr>
+<tr class="odd">
+<td align="left">treatm_expCAMHS.councelling</td>
+<td align="right">0.7976374</td>
+</tr>
+<tr class="even">
+<td align="left">TourettesTics</td>
+<td align="right">0.8277428</td>
+</tr>
+<tr class="odd">
+<td align="left">Education_parentOther</td>
+<td align="right">0.8397643</td>
+</tr>
+<tr class="even">
+<td align="left">contactSelf.referral</td>
+<td align="right">0.8796677</td>
+</tr>
+<tr class="odd">
+<td align="left">distance</td>
+<td align="right">0.8838799</td>
+</tr>
+<tr class="even">
+<td align="left">PanicDisorder</td>
+<td align="right">0.9368435</td>
+</tr>
+</tbody>
+</table>
+<p>According to this reasoning, we should retain the following variables (p &lt; .05):</p>
+<pre class="r"><code>mod_results$classical_01$univariate_lm_selection %&gt;% 
+  filter(pvalue &lt; .05) -&gt; mod_results$classical_01$univariate_lm_selection_signif
+  
+kable(mod_results$classical_01$univariate_lm_selection_signif)</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">names</th>
+<th align="right">pvalue</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">yearswithOCD</td>
+<td align="right">0.0002810</td>
+</tr>
+<tr class="even">
+<td align="left">OCD_treatm_expnone</td>
+<td align="right">0.0005732</td>
+</tr>
+<tr class="odd">
+<td align="left">CGI_S_pre</td>
+<td align="right">0.0008657</td>
+</tr>
+<tr class="even">
+<td align="left">CBT_OCD</td>
+<td align="right">0.0018604</td>
+</tr>
+<tr class="odd">
+<td align="left">ChOCI_R_P_sumimp_PRE</td>
+<td align="right">0.0039377</td>
+</tr>
+<tr class="even">
+<td align="left">EWSASP_sum_PRE</td>
+<td align="right">0.0041282</td>
+</tr>
+<tr class="odd">
+<td align="left">OCDonset</td>
+<td align="right">0.0049217</td>
+</tr>
+<tr class="even">
+<td align="left">SCAS_S_P_sum_PRE</td>
+<td align="right">0.0059556</td>
+</tr>
+<tr class="odd">
+<td align="left">ADHD</td>
+<td align="right">0.0254627</td>
+</tr>
+<tr class="even">
+<td align="left">ChOCI_R_C_sumimp_PRE</td>
+<td align="right">0.0294541</td>
+</tr>
+<tr class="odd">
+<td align="left">FAS_PR_sum_PRE</td>
+<td align="right">0.0315248</td>
+</tr>
+<tr class="even">
+<td align="left">CDI_S_sum_PRE</td>
+<td align="right">0.0322435</td>
+</tr>
+<tr class="odd">
+<td align="left">EWSASC_sum_PRE</td>
+<td align="right">0.0400821</td>
+</tr>
+</tbody>
+</table>
+<p>In sum, 13 variables were chosen.</p>
+<div id="run-regression-with-univariate-predictor-selection" class="section level2">
+<h2><span class="header-section-number">3.1</span> Run regression with univariate predictor selection</h2>
+<p>We take these predictors (which showed a statistical significant assocation with the outcome in bivariate regressions), and submit them to a multivariate regression.</p>
+<pre class="r"><code>data %&gt;% 
+  dplyr::select(one_of(mod_results$classical_01$univariate_lm_selection_signif$names)) -&gt; data_regr_univar_signif
+
+lm(data$CYBOCS_3m ~ . , data = data_regr_univar_signif) %&gt;% 
+  summary %&gt;% 
+  tidy %&gt;% 
+  dplyr::rename(predictor = term, b = estimate, SE = std.error, T = statistic, p = p.value) %&gt;%   mutate_if(is.numeric, round, digits = 3) %&gt;% 
+  arrange(p) -&gt;  mod_results$classical_01$lm1_tidy
+
+
+
+mod_results$classical_01$lm1_tidy %&gt;% 
+  kable</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">predictor</th>
+<th align="right">b</th>
+<th align="right">SE</th>
+<th align="right">T</th>
+<th align="right">p</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">ADHD</td>
+<td align="right">4.260</td>
+<td align="right">2.684</td>
+<td align="right">1.587</td>
+<td align="right">0.119</td>
+</tr>
+<tr class="even">
+<td align="left">yearswithOCD</td>
+<td align="right">0.714</td>
+<td align="right">0.515</td>
+<td align="right">1.386</td>
+<td align="right">0.172</td>
+</tr>
+<tr class="odd">
+<td align="left">SCAS_S_P_sum_PRE</td>
+<td align="right">0.147</td>
+<td align="right">0.155</td>
+<td align="right">0.947</td>
+<td align="right">0.348</td>
+</tr>
+<tr class="even">
+<td align="left">ChOCI_R_P_sumimp_PRE</td>
+<td align="right">0.129</td>
+<td align="right">0.143</td>
+<td align="right">0.905</td>
+<td align="right">0.370</td>
+</tr>
+<tr class="odd">
+<td align="left">EWSASP_sum_PRE</td>
+<td align="right">-0.095</td>
+<td align="right">0.143</td>
+<td align="right">-0.664</td>
+<td align="right">0.510</td>
+</tr>
+<tr class="even">
+<td align="left">CBT_OCD</td>
+<td align="right">4.061</td>
+<td align="right">6.483</td>
+<td align="right">0.626</td>
+<td align="right">0.534</td>
+</tr>
+<tr class="odd">
+<td align="left">CDI_S_sum_PRE</td>
+<td align="right">0.147</td>
+<td align="right">0.291</td>
+<td align="right">0.507</td>
+<td align="right">0.614</td>
+</tr>
+<tr class="even">
+<td align="left">EWSASC_sum_PRE</td>
+<td align="right">0.062</td>
+<td align="right">0.124</td>
+<td align="right">0.497</td>
+<td align="right">0.621</td>
+</tr>
+<tr class="odd">
+<td align="left">CGI_S_pre</td>
+<td align="right">0.590</td>
+<td align="right">1.399</td>
+<td align="right">0.422</td>
+<td align="right">0.675</td>
+</tr>
+<tr class="even">
+<td align="left">OCDonset</td>
+<td align="right">0.123</td>
+<td align="right">0.486</td>
+<td align="right">0.254</td>
+<td align="right">0.801</td>
+</tr>
+<tr class="odd">
+<td align="left">FAS_PR_sum_PRE</td>
+<td align="right">0.018</td>
+<td align="right">0.087</td>
+<td align="right">0.211</td>
+<td align="right">0.834</td>
+</tr>
+<tr class="even">
+<td align="left">ChOCI_R_C_sumimp_PRE</td>
+<td align="right">0.015</td>
+<td align="right">0.172</td>
+<td align="right">0.085</td>
+<td align="right">0.933</td>
+</tr>
+<tr class="odd">
+<td align="left">OCD_treatm_expnone</td>
+<td align="right">-0.510</td>
+<td align="right">6.510</td>
+<td align="right">-0.078</td>
+<td align="right">0.938</td>
+</tr>
+<tr class="even">
+<td align="left">(Intercept)</td>
+<td align="right">0.405</td>
+<td align="right">10.086</td>
+<td align="right">0.040</td>
+<td align="right">0.968</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="number-of-significant-predictors" class="section level2">
+<h2><span class="header-section-number">3.2</span> Number of significant predictors</h2>
+<p>How many predictors reach statistical significance?</p>
+<pre class="r"><code>mod_results$classical_01$lm1_tidy %&gt;% 
+  filter(p &lt; .05) %&gt;% 
+  nrow</code></pre>
+<pre><code>## [1] 0</code></pre>
+<p>The same table as above, somewhat more beautiful:</p>
+<pre class="r"><code>stargazer(mod_results$classical_01$lm1_tidy, type = &quot;html&quot;)</code></pre>
+<table style="text-align:center">
+<tr>
+<td colspan="6" style="border-bottom: 1px solid black">
+</td>
+</tr>
+<tr>
+<td style="text-align:left">
+Statistic
+</td>
+<td>
+N
+</td>
+<td>
+Mean
+</td>
+<td>
+St. Dev.
+</td>
+<td>
+Min
+</td>
+<td>
+Max
+</td>
+</tr>
+<tr>
+<td colspan="6" style="border-bottom: 1px solid black">
+</td>
+</tr>
+<tr>
+<td style="text-align:left">
+b
+</td>
+<td>
+14
+</td>
+<td>
+0.719
+</td>
+<td>
+1.488
+</td>
+<td>
+-0.510
+</td>
+<td>
+4.260
+</td>
+</tr>
+<tr>
+<td style="text-align:left">
+SE
+</td>
+<td>
+14
+</td>
+<td>
+2.091
+</td>
+<td>
+3.220
+</td>
+<td>
+0.087
+</td>
+<td>
+10.086
+</td>
+</tr>
+<tr>
+<td style="text-align:left">
+T
+</td>
+<td>
+14
+</td>
+<td>
+0.480
+</td>
+<td>
+0.593
+</td>
+<td>
+-0.664
+</td>
+<td>
+1.587
+</td>
+</tr>
+<tr>
+<td style="text-align:left">
+p
+</td>
+<td>
+14
+</td>
+<td>
+0.603
+</td>
+<td>
+0.278
+</td>
+<td>
+0.119
+</td>
+<td>
+0.968
+</td>
+</tr>
+<tr>
+<td colspan="6" style="border-bottom: 1px solid black">
+</td>
+</tr>
+</table>
+<p>Let’s have a look at the predictors which reached statistical significance:</p>
+<pre class="r"><code>mod_results$classical_01$lm1_tidy %&gt;% 
+  filter(p &lt; .05) %&gt;% 
+  mutate_if(is.numeric, round, digits = 2) -&gt; mod_results$classical_01$signif_preds
+
+mod_results$classical_01$signif_preds %&gt;% 
+  kable</code></pre>
+<p>predictor b SE T p ———- — — — —</p>
+</div>
+<div id="adj.-r-squared" class="section level2">
+<h2><span class="header-section-number">3.3</span> Adj. R squared</h2>
+<p><em>Adjusted</em> <span class="math inline">\(R^2\)</span> of the <em>whole</em> dataset is:</p>
+<pre class="r"><code>lm(data$CYBOCS_3m ~ . , data = data_regr_univar_signif) %&gt;% 
+  summary(.) %&gt;% 
+  .$adj.r.squared</code></pre>
+<pre><code>## [1] 0.2842183</code></pre>
+</div>
+<div id="variable-importance" class="section level2">
+<h2><span class="header-section-number">3.4</span> Variable importance</h2>
+<p>Let’s take the p-value of the univariate regression (ie., with one predictor) as the variable importance of that predictor.</p>
+<pre class="r"><code>if (nrow(mod_results$classical_01$signif_preds) &gt; 0 ){
+  mod_results$classical_01$signif_preds$rank &lt;-   min_rank(mod_results$classical_01$signif_preds$p)
+  
+  if (test_it) message(&quot;if_clause is entered&quot;)
+  
+  tibble(
+    name =  mod_results$classical_01$signif_preds$predictor,
+    value = mod_results$classical_01$signif_preds$b,
+    rank = min_rank(mod_results$classical_01$signif_preds$p)
+  ) -&gt; regr_varimp$classical_lm1
+} else {
+  regr_varimp$classical_lm1 &lt;- NA
+  if (test_it) message(&quot;if_clause is NOT entered&quot;)
+}</code></pre>
+</div>
+</div>
+<div id="bivariate-variable-selection-models-classification-binary-outcome" class="section level1">
+<h1><span class="header-section-number">4</span> Bivariate variable selection models (classification/ binary outcome)</h1>
+<p>Now, let’s take the <em>full</em> sample, and check whether/how strong each predictor is associated with the (<em>binary</em>) outcome. Those predictors will be used for the predicting the outcome in the next step.</p>
+<p>As the sample size is low, it can be argued that it is better not to split up the sample, but to use some overfitting-aware measure on the performance of the whole sample. Adjusted <span class="math inline">\(R^2\)</span> would be some sensible measure.</p>
+<pre class="r"><code>data %&gt;% 
+  dplyr::select(-c(responder_3m_f, CYBOCS_3m)) %&gt;% 
+  map(~glm(data$responder_3m_f ~ .x, data = data, family = &quot;binomial&quot;)) %&gt;% 
+  map(summary) %&gt;% 
+  map(&quot;coefficients&quot;) %&gt;% 
+  map_dbl(8) %&gt;%  # that's the p-value
+  tidy %&gt;% 
+  dplyr::rename(pvalue = x) %&gt;% 
+  dplyr::arrange(pvalue)  -&gt; mod_results$classical_02$univariate_lm_selection
+
+
+# rename(p.value = x)
+
+kable(mod_results$classical_02$univariate_lm_selection)</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">names</th>
+<th align="right">pvalue</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">OCDonset</td>
+<td align="right">0.0041023</td>
+</tr>
+<tr class="even">
+<td align="left">yearswithOCD</td>
+<td align="right">0.0041826</td>
+</tr>
+<tr class="odd">
+<td align="left">CGI_S_pre</td>
+<td align="right">0.0500339</td>
+</tr>
+<tr class="even">
+<td align="left">CYBOCS_pre_avoid</td>
+<td align="right">0.0502731</td>
+</tr>
+<tr class="odd">
+<td align="left">OCD_treatm_expnone</td>
+<td align="right">0.0507661</td>
+</tr>
+<tr class="even">
+<td align="left">contamination</td>
+<td align="right">0.0541124</td>
+</tr>
+<tr class="odd">
+<td align="left">CBT_OCD</td>
+<td align="right">0.0782683</td>
+</tr>
+<tr class="even">
+<td align="left">obsessions</td>
+<td align="right">0.0844637</td>
+</tr>
+<tr class="odd">
+<td align="left">SpecificPhob</td>
+<td align="right">0.1208212</td>
+</tr>
+<tr class="even">
+<td align="left">symmetry</td>
+<td align="right">0.1681591</td>
+</tr>
+<tr class="odd">
+<td align="left">ADHD</td>
+<td align="right">0.2059712</td>
+</tr>
+<tr class="even">
+<td align="left">distance</td>
+<td align="right">0.2136049</td>
+</tr>
+<tr class="odd">
+<td align="left">Education_parentHigh.school</td>
+<td align="right">0.2158712</td>
+</tr>
+<tr class="even">
+<td align="left">CYBOCS_pre_OBS</td>
+<td align="right">0.2258520</td>
+</tr>
+<tr class="odd">
+<td align="left">EWSASP_sum_PRE</td>
+<td align="right">0.2332157</td>
+</tr>
+<tr class="even">
+<td align="left">GAD</td>
+<td align="right">0.2335730</td>
+</tr>
+<tr class="odd">
+<td align="left">FAS_PR_sum_PRE</td>
+<td align="right">0.2357426</td>
+</tr>
+<tr class="even">
+<td align="left">CDI_S_sum_PRE</td>
+<td align="right">0.2494381</td>
+</tr>
+<tr class="odd">
+<td align="left">Education_parentUniversity</td>
+<td align="right">0.2536187</td>
+</tr>
+<tr class="even">
+<td align="left">ChOCI_R_C_sumsym_PRE</td>
+<td align="right">0.2761755</td>
+</tr>
+<tr class="odd">
+<td align="left">sexgirl</td>
+<td align="right">0.2776753</td>
+</tr>
+<tr class="even">
+<td align="left">numberdiagnos</td>
+<td align="right">0.2837101</td>
+</tr>
+<tr class="odd">
+<td align="left">ChOCI_R_P_sumsym_PRE</td>
+<td align="right">0.2887986</td>
+</tr>
+<tr class="even">
+<td align="left">ChOCI_R_P_sumimp_PRE</td>
+<td align="right">0.2897357</td>
+</tr>
+<tr class="odd">
+<td align="left">treatm_expCAMHS.councelling</td>
+<td align="right">0.3495036</td>
+</tr>
+<tr class="even">
+<td align="left">EWSASC_sum_PRE</td>
+<td align="right">0.3544637</td>
+</tr>
+<tr class="odd">
+<td align="left">medicationSSRI</td>
+<td align="right">0.3809101</td>
+</tr>
+<tr class="even">
+<td align="left">ChOCI_R_C_sumimp_PRE</td>
+<td align="right">0.4086728</td>
+</tr>
+<tr class="odd">
+<td align="left">contactSelf.referral</td>
+<td align="right">0.4209555</td>
+</tr>
+<tr class="even">
+<td align="left">PanicDisorder</td>
+<td align="right">0.4209555</td>
+</tr>
+<tr class="odd">
+<td align="left">Depression</td>
+<td align="right">0.4209555</td>
+</tr>
+<tr class="even">
+<td align="left">TourettesTics</td>
+<td align="right">0.4723337</td>
+</tr>
+<tr class="odd">
+<td align="left">checking</td>
+<td align="right">0.6047965</td>
+</tr>
+<tr class="even">
+<td align="left">CYBOCS_pre_COMP</td>
+<td align="right">0.6075752</td>
+</tr>
+<tr class="odd">
+<td align="left">treatm_expnone</td>
+<td align="right">0.7403772</td>
+</tr>
+<tr class="even">
+<td align="left">SCAS_S_P_sum_PRE</td>
+<td align="right">0.7874833</td>
+</tr>
+<tr class="odd">
+<td align="left">medicationnone</td>
+<td align="right">0.8130749</td>
+</tr>
+<tr class="even">
+<td align="left">medication_yesno</td>
+<td align="right">0.8130749</td>
+</tr>
+<tr class="odd">
+<td align="left">age</td>
+<td align="right">0.8145983</td>
+</tr>
+<tr class="even">
+<td align="left">SCAS_S_C_sum_PRE</td>
+<td align="right">0.8322677</td>
+</tr>
+<tr class="odd">
+<td align="left">BirthcountrySweden</td>
+<td align="right">0.9015327</td>
+</tr>
+<tr class="even">
+<td align="left">SocialPhob</td>
+<td align="right">0.9015327</td>
+</tr>
+<tr class="odd">
+<td align="left">Education_parentOther</td>
+<td align="right">0.9047555</td>
+</tr>
+<tr class="even">
+<td align="left">CYBOCS_pre_insight</td>
+<td align="right">0.9151193</td>
+</tr>
+</tbody>
+</table>
+<p>According to this reasoning, we should retain the following variables (p &lt; .05):</p>
+<pre class="r"><code>mod_results$classical_02$univariate_lm_selection %&gt;% 
+  filter(pvalue &lt; .05) -&gt; mod_results$classical_02$univariate_lm_selection_signif
+  
+kable(mod_results$classical_02$univariate_lm_selection_signif)</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">names</th>
+<th align="right">pvalue</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">OCDonset</td>
+<td align="right">0.0041023</td>
+</tr>
+<tr class="even">
+<td align="left">yearswithOCD</td>
+<td align="right">0.0041826</td>
+</tr>
+</tbody>
+</table>
+<p>In sum, 2 variables were chosen.</p>
+<div id="run-classification-with-univariate-predictor-selection" class="section level2">
+<h2><span class="header-section-number">4.1</span> Run classification with univariate predictor selection</h2>
+<p>We take these predictors (which showed a statistical significant assocation with the outcome in bivariate regressions), and submit them to a multivariate regression.</p>
+<pre class="r"><code>data %&gt;% 
+  dplyr::select(one_of(mod_results$classical_02$univariate_lm_selection_signif$names)) -&gt; data_regr_univar_signif
+
+lm(data$CYBOCS_3m ~ . , data = data_regr_univar_signif) %&gt;% 
+  summary %&gt;% 
+  tidy %&gt;% 
+  dplyr::rename(predictor = term, b = estimate, SE = std.error, T = statistic, p = p.value) %&gt;%   mutate_if(is.numeric, round, digits = 3) %&gt;% 
+  arrange(p) -&gt;  mod_results$classical_02$lm1_tidy
+
+
+
+mod_results$classical_02$lm1_tidy %&gt;% 
+  kable</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">predictor</th>
+<th align="right">b</th>
+<th align="right">SE</th>
+<th align="right">T</th>
+<th align="right">p</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">yearswithOCD</td>
+<td align="right">1.077</td>
+<td align="right">0.460</td>
+<td align="right">2.342</td>
+<td align="right">0.023</td>
+</tr>
+<tr class="even">
+<td align="left">(Intercept)</td>
+<td align="right">8.669</td>
+<td align="right">6.595</td>
+<td align="right">1.314</td>
+<td align="right">0.194</td>
+</tr>
+<tr class="odd">
+<td align="left">OCDonset</td>
+<td align="right">0.023</td>
+<td align="right">0.478</td>
+<td align="right">0.047</td>
+<td align="right">0.962</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="number-of-significant-predictors-1" class="section level2">
+<h2><span class="header-section-number">4.2</span> Number of significant predictors</h2>
+<p>How many predictors reach statistical significance?</p>
+<pre class="r"><code>mod_results$classical_02$lm1_tidy %&gt;% 
+  filter(p &lt; .05) %&gt;% 
+  nrow</code></pre>
+<pre><code>## [1] 1</code></pre>
+<p>The same table as above, somewhat more beautiful:</p>
+<pre class="r"><code>stargazer(mod_results$classical_02$lm1_tidy, type = &quot;html&quot;)</code></pre>
+<table style="text-align:center">
+<tr>
+<td colspan="6" style="border-bottom: 1px solid black">
+</td>
+</tr>
+<tr>
+<td style="text-align:left">
+Statistic
+</td>
+<td>
+N
+</td>
+<td>
+Mean
+</td>
+<td>
+St. Dev.
+</td>
+<td>
+Min
+</td>
+<td>
+Max
+</td>
+</tr>
+<tr>
+<td colspan="6" style="border-bottom: 1px solid black">
+</td>
+</tr>
+<tr>
+<td style="text-align:left">
+b
+</td>
+<td>
+3
+</td>
+<td>
+3.256
+</td>
+<td>
+4.717
+</td>
+<td>
+0.023
+</td>
+<td>
+8.669
+</td>
+</tr>
+<tr>
+<td style="text-align:left">
+SE
+</td>
+<td>
+3
+</td>
+<td>
+2.511
+</td>
+<td>
+3.537
+</td>
+<td>
+0.460
+</td>
+<td>
+6.595
+</td>
+</tr>
+<tr>
+<td style="text-align:left">
+T
+</td>
+<td>
+3
+</td>
+<td>
+1.234
+</td>
+<td>
+1.150
+</td>
+<td>
+0.047
+</td>
+<td>
+2.342
+</td>
+</tr>
+<tr>
+<td style="text-align:left">
+p
+</td>
+<td>
+3
+</td>
+<td>
+0.393
+</td>
+<td>
+0.500
+</td>
+<td>
+0.023
+</td>
+<td>
+0.962
+</td>
+</tr>
+<tr>
+<td colspan="6" style="border-bottom: 1px solid black">
+</td>
+</tr>
+</table>
+<p>Let’s have a look at the predictors which reached statistical significance:</p>
+<pre class="r"><code>mod_results$classical_02$lm1_tidy %&gt;% 
+  filter(p &lt; .05) %&gt;% 
+  mutate_if(is.numeric, round, digits = 2) -&gt; mod_results$classical_02$signif_preds
+
+mod_results$classical_02$signif_preds %&gt;% 
+  kable</code></pre>
+<table>
+<thead>
+<tr class="header">
+<th align="left">predictor</th>
+<th align="right">b</th>
+<th align="right">SE</th>
+<th align="right">T</th>
+<th align="right">p</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">yearswithOCD</td>
+<td align="right">1.08</td>
+<td align="right">0.46</td>
+<td align="right">2.34</td>
+<td align="right">0.02</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="adj.-r-squared-1" class="section level2">
+<h2><span class="header-section-number">4.3</span> Adj. R squared</h2>
+<p><em>Adjusted</em> <span class="math inline">\(R^2\)</span> of the <em>whole</em> dataset is:</p>
+<pre class="r"><code>glm(data$responder_3m_f ~ .,
+               data = data_regr_univar_signif,
+               family = &quot;binomial&quot;,
+               control = list(maxit = 50)) %&gt;% 
+  pR2(.) %&gt;% 
+  print</code></pre>
+<pre><code>##         llh     llhNull          G2    McFadden        r2ML        r2CU 
+## -34.8150971 -41.6156136  13.6010329   0.1634126   0.1998593   0.2684557</code></pre>
+</div>
+<div id="variable-importance-1" class="section level2">
+<h2><span class="header-section-number">4.4</span> Variable importance</h2>
+<p>Let’s take the p-value of the univariate regression (ie., with one predictor) as the variable importance of that predictor.</p>
+<pre class="r"><code>if (nrow(mod_results$classical_02$signif_preds) &gt; 0 ){
+  mod_results$classical_02$signif_preds$rank &lt;-   min_rank(mod_results$classical_02$signif_preds$p)
+  
+  if (test_it) message(&quot;if_clause is entered&quot;)
+  
+  tibble(
+    name =  mod_results$classical_02$signif_preds$predictor,
+    value = mod_results$classical_02$signif_preds$b,
+    rank = min_rank(mod_results$classical_02$signif_preds$p)
+  ) -&gt; regr_varimp$classical_glm2
+} else {
+  regr_varimp$classical_glm2 &lt;- NA
+  if (test_it) message(&quot;if_clause is NOT entered&quot;)
+}</code></pre>
+</div>
+</div>
+<div id="clean-up" class="section level1">
+<h1><span class="header-section-number">5</span> Clean-up</h1>
+<p>Save results</p>
+<pre class="r"><code>save(mod_results, file = &quot;data_objects/mod_results.Rda&quot;)
+save(regr_varimp, file = &quot;data_objects/regr_varimp.Rda&quot;)</code></pre>
 </div>
 
 

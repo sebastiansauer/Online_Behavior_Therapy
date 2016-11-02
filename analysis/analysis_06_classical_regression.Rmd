@@ -1,8 +1,13 @@
 ---
 title: "Classical linear regression"
 author: "Sebastian Sauer"
-date: "30 10 2016"
-output: html_document
+date: "`r Sys.time()`"
+output: 
+  html_document:
+    code_folding: hide
+    toc: yes
+    toc_depth: 3
+    number_sections: true
 ---
 
 
@@ -58,7 +63,7 @@ Play or work (test it and recompute vs. rely on cached data)
 
 ```{r play_or_work, echo = TRUE}
 recompute <- TRUE
-test_it <- FALSE
+test_it <- TRUE
 
 write_to_file <- FALSE
 
@@ -153,11 +158,14 @@ summary(lm1)
 $R^2$ of this model is: `r summary(lm2)$r.squared`.
 
 
-# Bivariate variable selection models
+# Bivariate variable selection models (regression/ numeric outcome)
 
 Now, let's take the *full* sample, and check whether/how strong each predictor is correlated with the (metric) outcome. Those predictors will be used for the predicting the outcome in the next step.
 
-```{r univariate_feature_selection}
+As the sample size is low, it can be argued that it is better not to split up the sample, but to use some overfitting-aware measure on the performance of the whole sample. Adjusted $R^2$ would be some sensible measure.
+
+
+```{r univariate_feature_selection_classical_lm1}
 data %>% 
   dplyr::select(-c(responder_3m_f, CYBOCS_3m)) %>% 
   map(~lm(data$CYBOCS_3m ~ .x, data = data)) %>% 
@@ -186,10 +194,9 @@ kable(mod_results$classical_01$univariate_lm_selection_signif)
 
 In sum, `r nrow(mod_results$classical_01$univariate_lm_selection_signif)` variables were chosen. 
 
-However, I doubt that this procedure is the most advisable: This procedure is prone to overfitting.
 
 
-### Run regression with univariate predictor selection
+## Run regression with univariate predictor selection
 
 We take these predictors (which showed a statistical significant assocation with the outcome in bivariate regressions), and submit them to a multivariate regression.
 
@@ -198,14 +205,10 @@ We take these predictors (which showed a statistical significant assocation with
 data %>% 
   dplyr::select(one_of(mod_results$classical_01$univariate_lm_selection_signif$names)) -> data_regr_univar_signif
 
-lm(data$CYBOCS_3m ~ . , data = data_regr_univar_signif) -> univariate_lm1
-
-
-univariate_lm1 %>% 
+lm(data$CYBOCS_3m ~ . , data = data_regr_univar_signif) %>% 
   summary %>% 
   tidy %>% 
-  dplyr::rename(predictor = term, b = estimate, SE = std.error, T = statistic, p = p.value) %>% 
-  mutate_if(is.numeric, round, digits = 3) %>% 
+  dplyr::rename(predictor = term, b = estimate, SE = std.error, T = statistic, p = p.value) %>%   mutate_if(is.numeric, round, digits = 3) %>% 
   arrange(p) ->  mod_results$classical_01$lm1_tidy
 
 
@@ -216,7 +219,19 @@ mod_results$classical_01$lm1_tidy %>%
 
 ```
 
-The same table, somewhat more beautiful:
+## Number of significant predictors
+
+How many predictors reach statistical significance?
+
+```{r lm1_nr_signif_preds}
+mod_results$classical_01$lm1_tidy %>% 
+  filter(p < .05) %>% 
+  nrow
+```
+
+
+
+The same table as above, somewhat more beautiful:
 
 ```{r lm1_stargazer, results = "asis"}
 stargazer(mod_results$classical_01$lm1_tidy, type = "html")
@@ -227,47 +242,195 @@ stargazer(mod_results$classical_01$lm1_tidy, type = "html")
 Let's have a look at the predictors which reached statistical significance:
 
 ```{r lm1_results_signif_only}
-univariate_lm1 %>% 
-  summary %>% 
-  tidy %>% 
-  filter(p.value < .05) %>% 
-  mutate_if(is.numeric, round, digits = 2) -> mod_results$glmfit1$signif_preds
+mod_results$classical_01$lm1_tidy %>% 
+  filter(p < .05) %>% 
+  mutate_if(is.numeric, round, digits = 2) -> mod_results$classical_01$signif_preds
 
-mod_results$glmfit1$signif_preds %>% 
+mod_results$classical_01$signif_preds %>% 
   kable
 
 ```
 
+## Adj. R squared
 
-Adjusted $R^2$ of the whole dataset is:
+*Adjusted* $R^2$ of the *whole* dataset is:
 
-```{r}
-summary(univariate_lm1)$adj.r.squared
+```{r lm1_adj_rsquared}
+lm(data$CYBOCS_3m ~ . , data = data_regr_univar_signif) %>% 
+  summary(.) %>% 
+  .$adj.r.squared
 ```
 
+## Variable importance
 
-Let's take the adjusted R squared of the test sample with one predictor as the variable importance of that predictor.
+Let's take the p-value of the univariate regression (ie., with one predictor) as the variable importance of that predictor.
 
 ```{r lm1_varimp}
 
-mod_results$classical_01$signif_preds$rank <- min_rank(mod_results$classical_01$signif_preds$p)
-
-tibble(
-  name =  mod_results$classical_01$signif_preds$term,
-  value = mod_results$classical_01$signif_preds$p.value,
-  rank = min_rank(mod_results$classical_01$signif_preds$p.value)
-) -> regr_varimp$classical_lm1
-
-
-# 
-# 
-# mod_results$glmfit1$signif_preds %>% 
-#   filter(term != "(Intercept)") %>% 
-#   dplyr::select(term, statistic) %>% 
-#   dplyr::rename(name = term, value = statistic) %>% 
-#   mutate(rank = min_rank(desc(value))) -> regr_varimp$LM_univariate
+if (nrow(mod_results$classical_01$signif_preds) > 0 ){
+  mod_results$classical_01$signif_preds$rank <-   min_rank(mod_results$classical_01$signif_preds$p)
+  
+  if (test_it) message("if_clause is entered")
+  
+  tibble(
+    name =  mod_results$classical_01$signif_preds$predictor,
+    value = mod_results$classical_01$signif_preds$b,
+    rank = min_rank(mod_results$classical_01$signif_preds$p)
+  ) -> regr_varimp$classical_lm1
+} else {
+  regr_varimp$classical_lm1 <- NA
+  if (test_it) message("if_clause is NOT entered")
+}
 
 ```
+
+
+
+
+# Bivariate variable selection models (classification/ binary outcome)
+
+Now, let's take the *full* sample, and check whether/how strong each predictor is associated with the (*binary*) outcome. Those predictors will be used for the predicting the outcome in the next step.
+
+As the sample size is low, it can be argued that it is better not to split up the sample, but to use some overfitting-aware measure on the performance of the whole sample. Adjusted $R^2$ would be some sensible measure.
+
+
+```{r univariate_feature_selection_glm2}
+data %>% 
+  dplyr::select(-c(responder_3m_f, CYBOCS_3m)) %>% 
+  map(~glm(data$responder_3m_f ~ .x, data = data, family = "binomial")) %>% 
+  map(summary) %>% 
+  map("coefficients") %>% 
+  map_dbl(8) %>%  # that's the p-value
+  tidy %>% 
+  dplyr::rename(pvalue = x) %>% 
+  dplyr::arrange(pvalue)  -> mod_results$classical_02$univariate_lm_selection
+
+
+# rename(p.value = x)
+
+kable(mod_results$classical_02$univariate_lm_selection)
+```
+
+According to this reasoning, we should retain the following variables (p < .05):
+
+
+```{r classical_glm_02_signif_prdictors}
+mod_results$classical_02$univariate_lm_selection %>% 
+  filter(pvalue < .05) -> mod_results$classical_02$univariate_lm_selection_signif
+  
+kable(mod_results$classical_02$univariate_lm_selection_signif)
+```
+
+In sum, `r nrow(mod_results$classical_02$univariate_lm_selection_signif)` variables were chosen. 
+
+
+
+## Run classification with univariate predictor selection
+
+We take these predictors (which showed a statistical significant assocation with the outcome in bivariate regressions), and submit them to a multivariate regression.
+
+```{r classical_glm2_results}
+
+data %>% 
+  dplyr::select(one_of(mod_results$classical_02$univariate_lm_selection_signif$names)) -> data_regr_univar_signif
+
+lm(data$CYBOCS_3m ~ . , data = data_regr_univar_signif) %>% 
+  summary %>% 
+  tidy %>% 
+  dplyr::rename(predictor = term, b = estimate, SE = std.error, T = statistic, p = p.value) %>%   mutate_if(is.numeric, round, digits = 3) %>% 
+  arrange(p) ->  mod_results$classical_02$lm1_tidy
+
+
+
+mod_results$classical_02$lm1_tidy %>% 
+  kable
+
+
+```
+
+## Number of significant predictors
+
+How many predictors reach statistical significance?
+
+```{r glm2_nr_signif_preds}
+mod_results$classical_02$lm1_tidy %>% 
+  filter(p < .05) %>% 
+  nrow
+```
+
+
+
+The same table as above, somewhat more beautiful:
+
+```{r glm2_stargazer, results = "asis"}
+stargazer(mod_results$classical_02$lm1_tidy, type = "html")
+
+```
+
+
+Let's have a look at the predictors which reached statistical significance:
+
+```{r glm2_results_signif_only}
+mod_results$classical_02$lm1_tidy %>% 
+  filter(p < .05) %>% 
+  mutate_if(is.numeric, round, digits = 2) -> mod_results$classical_02$signif_preds
+
+mod_results$classical_02$signif_preds %>% 
+  kable
+
+```
+
+## Adj. R squared
+
+*Adjusted* $R^2$ of the *whole* dataset is:
+
+```{r adj_rsqaured_glm2}
+
+glm(data$responder_3m_f ~ .,
+               data = data_regr_univar_signif,
+               family = "binomial",
+               control = list(maxit = 50)) %>% 
+  pR2(.) %>% 
+  print
+
+```
+
+## Variable importance
+
+Let's take the p-value of the univariate regression (ie., with one predictor) as the variable importance of that predictor.
+
+```{r glm2_varimp}
+
+if (nrow(mod_results$classical_02$signif_preds) > 0 ){
+  mod_results$classical_02$signif_preds$rank <-   min_rank(mod_results$classical_02$signif_preds$p)
+  
+  if (test_it) message("if_clause is entered")
+  
+  tibble(
+    name =  mod_results$classical_02$signif_preds$predictor,
+    value = mod_results$classical_02$signif_preds$b,
+    rank = min_rank(mod_results$classical_02$signif_preds$p)
+  ) -> regr_varimp$classical_glm2
+} else {
+  regr_varimp$classical_glm2 <- NA
+  if (test_it) message("if_clause is NOT entered")
+}
+
+```
+
+
+# Clean-up
+
+Save results
+
+```{r save_results}
+save(mod_results, file = "data_objects/mod_results.Rda")
+save(regr_varimp, file = "data_objects/regr_varimp.Rda")
+
+```
+
+
+
 
 
 
