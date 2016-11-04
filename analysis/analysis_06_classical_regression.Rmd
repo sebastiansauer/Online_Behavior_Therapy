@@ -87,8 +87,6 @@ load(file = "data_objects/mod_results.Rda")
 load("data_objects/important_predictors.Rda")
 load("data_objects/important_predictors_overview.Rda")
 
-# attr(data, spec) <- ""
-# attributes(data)
 ```
 
 
@@ -176,7 +174,7 @@ Now, let's take the *full* sample, and check whether/how strong each predictor i
 As the sample size is low, it can be argued that it is better not to split up the sample, but to use some overfitting-aware measure on the performance of the whole sample. Adjusted $R^2$ would be some sensible measure.
 
 
-## Univariate predictor selection
+## Predictor selection
 
 We compute a regression with *one* predictor, and repeat that for each predictor. The p-value is taken as criterion of "relevant" predictor. This choise is debatable, but let's leave that for now.
 
@@ -205,8 +203,10 @@ According to this reasoning, we should retain the following variables (p < .05):
 
 
 ```{r lm1_signif_prdictors}
+
 mod_results$classical_01$univariate_lm_selection %>% 
-  filter(pvalue < .05) -> mod_results$classical_01$univariate_lm_selection_signif
+  filter(p < .05) %>% 
+  filter(!str_detect(predictor, "(Intercept)")) -> mod_results$classical_01$univariate_lm_selection_signif
   
 kable(mod_results$classical_01$univariate_lm_selection_signif)
 ```
@@ -252,18 +252,17 @@ We take these predictors (which showed a statistical significant assocation with
 ```{r classical_lm1_results}
 
 data %>% 
-  dplyr::select(one_of(mod_results$classical_01$univariate_lm_selection_signif$names)) -> data_regr_univar_signif
+  dplyr::select(one_of(mod_results$classical_01$univariate_lm_selection_signif$predictor))  -> data_regr_univar_signif
 
 lm(data$CYBOCS_3m ~ . , data = data_regr_univar_signif) %>% 
-  summary %>% 
-  tidy %>% 
-  dplyr::rename(predictor = term, b = estimate, SE = std.error, T = statistic, p = p.value) %>%   mutate_if(is.numeric, round, digits = 3) %>% 
-  arrange(p) ->  mod_results$classical_01$lm1_tidy
+  tidy(conf.int = TRUE) %>% 
+  arrange(p.value) ->  mod_results$classical_01$lm1_tidy
 
 
 
 mod_results$classical_01$lm1_tidy %>% 
   kable
+
 
 
 ```
@@ -274,7 +273,7 @@ How many predictors reach statistical significance?
 
 ```{r lm1_nr_signif_preds}
 mod_results$classical_01$lm1_tidy %>% 
-  filter(p < .05) %>% 
+  filter(p.value < .05) %>% 
   nrow
 ```
 
@@ -292,7 +291,7 @@ Let's have a look at the predictors which reached statistical significance:
 
 ```{r lm1_results_signif_only}
 mod_results$classical_01$lm1_tidy %>% 
-  filter(p < .05) %>% 
+  filter(p.value < .05) %>% 
   mutate_if(is.numeric, round, digits = 2) -> mod_results$classical_01$signif_preds
 
 mod_results$classical_01$signif_preds %>% 
@@ -306,9 +305,18 @@ mod_results$classical_01$signif_preds %>%
 
 ```{r lm1_adj_rsquared}
 lm(data$CYBOCS_3m ~ . , data = data_regr_univar_signif) %>% 
-  summary(.) %>% 
-  .$adj.r.squared
+  glance %>% 
+  kable
 ```
+
+## Regression diagnistics
+
+```{r lm1_regr_diagnostics_augment}
+lm(data$CYBOCS_3m ~ . , data = data_regr_univar_signif) %>% 
+  augment %>% 
+  kable
+```
+
 
 ## Variable importance
 
@@ -342,7 +350,11 @@ Now, let's take the *full* sample, and check whether/how strong each predictor i
 
 As the sample size is low, it can be argued that it is better not to split up the sample, but to use some overfitting-aware measure on the performance of the whole sample. Adjusted $R^2$ would be some sensible measure.
 
+## Predictor selection
 
+Now, let's run a logistic regression for each predictor (with `responder_3m_f` as outcome), and check the results.
+
+Here are the p-values for each predictor (ie., one model for each predictor)
 ```{r univariate_feature_selection_glm2}
 data %>% 
   dplyr::select(-c(responder_3m_f, CYBOCS_3m)) %>% 
@@ -361,6 +373,21 @@ kable(mod_results$classical_02$univariate_lm_selection)
 
 With some more details:
 
+```{r univariate_feature_selection_glm2_details}
+data %>% 
+  dplyr::select(-c(responder_3m_f, CYBOCS_3m)) %>% 
+  map(~glm(data$responder_3m_f ~ .x, data = data, family = "binomial")) %>% 
+  map(tidy, conf.int = TRUE) %>% 
+  do.call(rbind.data.frame, .) %>% 
+  rownames_to_column %>% 
+  dplyr::arrange(p.value)  -> mod_results$classical_02$univariate_lm_selection_details
+
+
+
+kable(mod_results$classical_02$univariate_lm_selection_details)
+```
+
+Here is the model performance ($R^2$ etc.).
 
 ```{r univariate_feature_selection_glm2_glance}
 data %>% 
@@ -377,9 +404,10 @@ data %>%
 kable(mod_results$classical_02$univariate_lm_selection_glance)
 ```
 
+And here are the regression diagnostics:
 
 
-```{r univariate_feature_selection_glm2_augment}
+```{r univariate_feature_selection_glm2_augment, include = FALSE}
 data %>% 
   dplyr::select(-c(responder_3m_f, CYBOCS_3m)) %>% 
   map(~glm(data$responder_3m_f ~ .x, data = data, family = "binomial")) %>% 
@@ -409,7 +437,7 @@ In sum, `r nrow(mod_results$classical_02$univariate_lm_selection_signif)` variab
 
 
 
-## Run classification with univariate predictor selection
+## Classification with univariate predictor selection
 
 We take these predictors (which showed a statistical significant assocation with the outcome in bivariate regressions), and submit them to a multivariate regression.
 
