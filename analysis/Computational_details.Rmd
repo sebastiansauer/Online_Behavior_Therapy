@@ -1,0 +1,30 @@
+---
+title: "computational environment"
+author: "Sebastian Sauer"
+date: "4 11 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+knitr::opts_knit$set(root.dir=normalizePath('../'))
+
+```
+
+## Computer used
+All statistical analyses were conducted on this computer:
+
+- MacBook Pro (2014)
+- processor: 2.8 GHz Intel Core i7
+- RAM: 16 GB 1600 MHz DDR3
+
+
+## R environment
+
+```{r}
+source("analysis/functions/load_libs.R")
+
+sessionInfo()
+```
+

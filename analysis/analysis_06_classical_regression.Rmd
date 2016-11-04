@@ -133,18 +133,17 @@ if ("responder_3m_f" %in% names(data)) {
   dplyr::select(data2, -responder_3m_f) -> data2}
   
 
-lm1 <- lm(CYBOCS_3m ~ ., data = data2)  
-summary(lm1)
+lm(CYBOCS_3m ~ ., data = data2) %>% summary %>% tidy %>% kable
 ```
 
-$R^2$ of this model is: `r summary(lm1)$r.squared`.
+$R^2$ of this model is: `r summary(lm(CYBOCS_3m ~ ., data = data2))$r.squared`.
 
 ## Binary regression models
 Outcome: `responder_3m_f`.
 
 ```{r nonsense_lm2}
 data %>% 
- sample_n(45, replace = FALSE) %>% 
+ dplyr::sample_n(45, replace = FALSE) %>% 
   na.omit -> data2
 
 
@@ -152,7 +151,7 @@ if ("CYBOCS_3m" %in% names(data)) {
   dplyr::select(data2, -CYBOCS_3m) -> data2}
   
 
-glm(responder_3m_f ~ ., data = data2, familiy = "binomial") %>% summary
+glm(responder_3m_f ~ ., data = data2, family = "binomial") %>% summary
 ```
 
 
@@ -172,24 +171,32 @@ glm(data2$responder_3m_f ~ .,
 
 # Bivariate variable selection models (regression/ numeric outcome)
 
-Now, let's take the *full* sample, and check whether/how strong each predictor is correlated with the (metric) outcome. Those predictors will be used for the predicting the outcome in the next step.
+Now, let's take the *full* sample, and check whether/how strong each predictor is correlated with the (metric) outcome. Predictors which are correlated (p<.05) with the outcome will be used for the predicting the outcome in the next step.
 
 As the sample size is low, it can be argued that it is better not to split up the sample, but to use some overfitting-aware measure on the performance of the whole sample. Adjusted $R^2$ would be some sensible measure.
 
 
+## Univariate predictor selection
+
+We compute a regression with *one* predictor, and repeat that for each predictor. The p-value is taken as criterion of "relevant" predictor. This choise is debatable, but let's leave that for now.
+
 ```{r univariate_feature_selection_classical_lm1}
+
 data %>% 
   dplyr::select(-c(responder_3m_f, CYBOCS_3m)) %>% 
   map(~lm(data$CYBOCS_3m ~ .x, data = data)) %>% 
   map(summary) %>% 
   map("coefficients") %>% 
-  map_dbl(8) %>% # 8th value is p-value
-  tidy %>% 
-  dplyr::rename(pvalue = x) %>% 
-  dplyr::arrange(pvalue)  -> mod_results$classical_01$univariate_lm_selection
+  do.call(rbind.data.frame, .) %>% 
+  rownames_to_column %>% 
+  as_tibble %>% 
+  setNames(c("predictor", "b", "SE", "t", "p")) %>% 
+  filter() %>% 
+  dplyr::arrange(p) %>% 
+  filter(!str_detect(predictor, "(Intercept)")) %>% 
+  mutate(predictor = str_sub(predictor, start = 1, end = str_length(predictor)-3))  -> mod_results$classical_01$univariate_lm_selection
 
 
-# rename(p.value = x)
 
 kable(mod_results$classical_01$univariate_lm_selectio)
 ```
@@ -207,8 +214,38 @@ kable(mod_results$classical_01$univariate_lm_selection_signif)
 In sum, `r nrow(mod_results$classical_01$univariate_lm_selection_signif)` variables were chosen. 
 
 
+Let's also have a look at the (adj.) R squared of each model
 
-## Run regression with univariate predictor selection
+```{r r2_univariate_lm}
+
+
+data %>% 
+  dplyr::select(-c(responder_3m_f, CYBOCS_3m)) %>% 
+  map(~lm(data$CYBOCS_3m ~ .x, data = data)) %>% 
+  map(glance) %>% 
+  do.call(rbind.data.frame, .) %>% 
+  rownames_to_column %>% 
+  as_tibble %>% kable
+
+
+data %>% 
+  dplyr::select(-c(responder_3m_f, CYBOCS_3m)) %>% 
+  map(~lm(data$CYBOCS_3m ~ .x, data = data)) %>% 
+  map(glance) %>% 
+  do.call(rbind.data.frame, .) %>% 
+  rownames_to_column %>% 
+  as_tibble %>% 
+  ggplot(aes(x = reorder(rowname, adj.r.squared), y = adj.r.squared)) +
+  geom_point() +
+  coord_flip() + 
+  scale_y_continuous(labels = scales::percent) +
+  xlab("predictors") +
+  ylab(expression(R^{2}))
+```
+
+
+
+## Regression with univariate predictor selection (numeric outcome)
 
 We take these predictors (which showed a statistical significant assocation with the outcome in bivariate regressions), and submit them to a multivariate regression.
 
@@ -318,10 +355,45 @@ data %>%
   dplyr::arrange(pvalue)  -> mod_results$classical_02$univariate_lm_selection
 
 
-# rename(p.value = x)
 
 kable(mod_results$classical_02$univariate_lm_selection)
 ```
+
+With some more details:
+
+
+```{r univariate_feature_selection_glm2_glance}
+data %>% 
+  dplyr::select(-c(responder_3m_f, CYBOCS_3m)) %>% 
+  map(~glm(data$responder_3m_f ~ .x, data = data, family = "binomial")) %>% 
+  map(glance) %>% 
+  do.call(rbind.data.frame, .) %>% 
+  rownames_to_column %>% 
+  as_tibble %>% 
+  dplyr::rename(predictor = rowname)  -> mod_results$classical_02$univariate_lm_selection_glance
+
+
+
+kable(mod_results$classical_02$univariate_lm_selection_glance)
+```
+
+
+
+```{r univariate_feature_selection_glm2_augment}
+data %>% 
+  dplyr::select(-c(responder_3m_f, CYBOCS_3m)) %>% 
+  map(~glm(data$responder_3m_f ~ .x, data = data, family = "binomial")) %>% 
+  map(augment) %>% 
+  do.call(rbind.data.frame, .) %>% 
+  rownames_to_column %>% 
+  as_tibble %>% 
+  dplyr::rename(predictor = rowname)  -> mod_results$classical_02$univariate_lm_selection_glance
+
+
+
+kable(mod_results$classical_02$univariate_lm_selection_glance)
+```
+
 
 According to this reasoning, we should retain the following variables (p < .05):
 
