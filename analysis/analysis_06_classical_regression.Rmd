@@ -131,7 +131,7 @@ if ("responder_3m_f" %in% names(data)) {
   dplyr::select(data2, -responder_3m_f) -> data2}
   
 
-lm(CYBOCS_3m ~ ., data = data2) %>% summary %>% tidy %>% kable
+lm(CYBOCS_3m ~ ., data = data2) %>% summary %>% tidy %>% kable(digits = 3)
 ```
 
 $R^2$ of this model is: `r summary(lm(CYBOCS_3m ~ ., data = data2))$r.squared`.
@@ -182,33 +182,42 @@ We compute a regression with *one* predictor, and repeat that for each predictor
 
 data %>% 
   dplyr::select(-c(responder_3m_f, CYBOCS_3m)) %>% 
-  map(~lm(data$CYBOCS_3m ~ .x, data = data)) %>% 
-  map(summary) %>% 
-  map("coefficients") %>% 
+  map(~lm(data$CYBOCS_3m ~ .x, data = data)) %>%
+  map(tidy, conf.int = TRUE) %>% 
+  # map(summary) %>% 
+  # map("coefficients") %>% 
   do.call(rbind.data.frame, .) %>% 
   rownames_to_column %>% 
   as_tibble %>% 
-  setNames(c("predictor", "b", "SE", "t", "p")) %>% 
-  filter() %>% 
+  dplyr::rename(predictor = rowname, p = p.value, b = estimate, SE = std.error, t = statistic) %>% 
+  # setNames(c("predictor", "b", "SE", "t", "p", "conf.low", "conf.hi")) %>% 
   dplyr::arrange(p) %>% 
-  filter(!str_detect(predictor, "(Intercept)")) %>% 
-  mutate(predictor = str_sub(predictor, start = 1, end = str_length(predictor)-3))  -> mod_results$classical_01$univariate_lm_selection
+  filter(!str_detect(term, "(Intercept)")) %>% 
+  dplyr::select(-term) %>% 
+  mutate(predictor = str_sub(predictor, start = 1, end = str_length(predictor)-2))  -> mod_results$classical_01$univariate_lm_selection
 
 
 
-kable(mod_results$classical_01$univariate_lm_selectio)
+mod_results$classical_01$univariate_lm_selection %>% 
+  mutate_at(vars(b, SE, t, conf.low, conf.high), funs(round(., 2))) %>% 
+  mutate(p = round(p, 3)) %>% 
+  mutate(p = ifelse(p == 0, 0.001, p)) %>% 
+  kable
 ```
 
 According to this reasoning, we should retain the following variables (p < .05):
 
 
-```{r lm1_signif_prdictors}
+```{r lm1_signif_predictors}
 
 mod_results$classical_01$univariate_lm_selection %>% 
   filter(p < .05) %>% 
   filter(!str_detect(predictor, "(Intercept)")) -> mod_results$classical_01$univariate_lm_selection_signif
   
-kable(mod_results$classical_01$univariate_lm_selection_signif)
+mod_results$classical_01$univariate_lm_selection_signif %>% 
+  mutate_at(vars(b, SE, t), funs(round(., 2))) %>% 
+  mutate(p = ifelse(p < 0.01, 0.001, round(p, 3))) %>% 
+  kable
 ```
 
 In sum, `r nrow(mod_results$classical_01$univariate_lm_selection_signif)` variables were chosen. 
@@ -216,16 +225,20 @@ In sum, `r nrow(mod_results$classical_01$univariate_lm_selection_signif)` variab
 
 Let's also have a look at the (adj.) R squared of each model
 
-```{r r2_univariate_lm}
 
 
+
+```{r classical_lm1_r2_preds}
+  
 data %>% 
   dplyr::select(-c(responder_3m_f, CYBOCS_3m)) %>% 
   map(~lm(data$CYBOCS_3m ~ .x, data = data)) %>% 
   map(glance) %>% 
   do.call(rbind.data.frame, .) %>% 
   rownames_to_column %>% 
-  as_tibble %>% kable
+  as_tibble %>% 
+  arrange(-r.squared) %>% 
+  kable(digits = 3)
 
 
 data %>% 
@@ -240,6 +253,39 @@ data %>%
   coord_flip() + 
   scale_y_continuous(labels = scales::percent) +
   xlab("predictors") +
+  ylab(expression(R^{2}))
+  
+```
+
+And now the $R^2$ for the significant predictors only:
+
+
+```{r classical_lm1_r2_signif_preds}
+
+
+data %>% 
+  dplyr::select(one_of(mod_results$classical_01$univariate_lm_selection_signif$predictor)) -> mod_results$classical_01$univariate_signif_preds_df
+
+mod_results$classical_01$univariate_signif_preds_df %>%   
+  map(~lm(data$CYBOCS_3m ~ .x, data = mod_results$classical_01$univariate_signif_preds_df)) %>%   map(glance) %>% 
+  do.call(rbind.data.frame, .) %>% 
+  rownames_to_column %>% 
+  as_tibble %>% 
+  arrange(-r.squared) %>% 
+  kable(digits = 3)
+
+
+mod_results$classical_01$univariate_signif_preds_df %>%   
+  map(~lm(data$CYBOCS_3m ~ .x, data = mod_results$classical_01$univariate_signif_preds_df)) %>%   map(glance) %>% 
+  do.call(rbind.data.frame, .) %>% 
+  rownames_to_column %>% 
+  as_tibble %>% 
+  arrange(-r.squared) %>% 
+  ggplot(aes(x = reorder(rowname, adj.r.squared), y = adj.r.squared)) +
+  geom_point() +
+  coord_flip() + 
+  scale_y_continuous(labels = scales::percent) +
+  xlab("significant predictors") +
   ylab(expression(R^{2}))
 ```
 
@@ -261,7 +307,7 @@ lm(data$CYBOCS_3m ~ . , data = data_regr_univar_signif) %>%
 
 
 mod_results$classical_01$lm1_tidy %>% 
-  kable
+  kable(digits = 3)
 
 
 
@@ -295,7 +341,7 @@ mod_results$classical_01$lm1_tidy %>%
   mutate_if(is.numeric, round, digits = 2) -> mod_results$classical_01$signif_preds
 
 mod_results$classical_01$signif_preds %>% 
-  kable
+  kable(digits = 3)
 
 ```
 
@@ -306,6 +352,7 @@ mod_results$classical_01$signif_preds %>%
 ```{r lm1_adj_rsquared}
 lm(data$CYBOCS_3m ~ . , data = data_regr_univar_signif) %>% 
   glance %>% 
+  arrange(-r.squared) %>% 
   kable
 ```
 
@@ -314,7 +361,7 @@ lm(data$CYBOCS_3m ~ . , data = data_regr_univar_signif) %>%
 ```{r lm1_regr_diagnostics_augment}
 lm(data$CYBOCS_3m ~ . , data = data_regr_univar_signif) %>% 
   augment %>% 
-  kable
+  kable(digits = 3)
 ```
 
 
@@ -352,6 +399,7 @@ As the sample size is low, it can be argued that it is better not to split up th
 
 ## Predictor selection
 
+### Univariate (one predictor) logistic regression models
 Now, let's run a logistic regression for each predictor (with `responder_3m_f` as outcome), and check the results.
 
 Here are the p-values for each predictor (ie., one model for each predictor)
@@ -368,7 +416,7 @@ data %>%
 
 
 
-kable(mod_results$classical_02$univariate_lm_selection)
+kable(mod_results$classical_02$univariate_lm_selection, digits = 3)
 ```
 
 With some more details:
@@ -384,10 +432,13 @@ data %>%
 
 
 
-kable(mod_results$classical_02$univariate_lm_selection_details)
+kable(mod_results$classical_02$univariate_lm_selection_details, digits = 3)
 ```
 
-Here is the model performance ($R^2$ etc.).
+
+### $R^2$ of the simple regression models
+
+Here is the model performance.
 
 ```{r univariate_feature_selection_glm2_glance}
 data %>% 
@@ -401,9 +452,33 @@ data %>%
 
 
 
-kable(mod_results$classical_02$univariate_lm_selection_glance)
+kable(mod_results$classical_02$univariate_lm_selection_glance, digits = 3)
 ```
 
+
+Pseudo $R^2$
+
+```{r univariate_feature_selection_glm2_pR2}
+data %>% 
+  dplyr::select(-c(responder_3m_f, CYBOCS_3m)) %>% 
+  map(~glm(data$responder_3m_f ~ .x, 
+           data = data, 
+           family = "binomial")) %>% 
+  map(pR2) %>% 
+  do.call("rbind.data.frame", .) %>% 
+  rownames_to_column %>% 
+  as_tibble %>% 
+  setNames(c("predictor", "llh", "llhNull", "G2", "McFadden", "r2ML", "r2CU")) %>% 
+  arrange(-McFadden) -> mod_results$classical_02$univariate_lm_selection_pR2
+
+
+
+kable(mod_results$classical_02$univariate_lm_selection_pR2, digits = 3)
+```
+
+
+
+### Regression diagnostics
 And here are the regression diagnostics:
 
 
@@ -419,18 +494,18 @@ data %>%
 
 
 
-kable(mod_results$classical_02$univariate_lm_selection_glance)
+kable(mod_results$classical_02$univariate_lm_selection_glance, digits = 3)
 ```
 
 
 According to this reasoning, we should retain the following variables (p < .05):
 
 
-```{r classical_glm_02_signif_prdictors}
+```{r classical_glm_02_signif_predictors}
 mod_results$classical_02$univariate_lm_selection %>% 
   filter(pvalue < .05) -> mod_results$classical_02$univariate_lm_selection_signif
   
-kable(mod_results$classical_02$univariate_lm_selection_signif)
+kable(mod_results$classical_02$univariate_lm_selection_signif, digits = 3)
 ```
 
 In sum, `r nrow(mod_results$classical_02$univariate_lm_selection_signif)` variables were chosen. 
@@ -444,28 +519,30 @@ We take these predictors (which showed a statistical significant assocation with
 ```{r classical_glm2_results}
 
 data %>% 
-  dplyr::select(one_of(mod_results$classical_02$univariate_lm_selection_signif$names)) -> data_regr_univar_signif
+  dplyr::select(one_of(mod_results$classical_02$univariate_lm_selection_signif$names)) %>% 
+  do(tidy(glm(data$responder_3m_f ~ . , 
+              data = ., 
+              family = "binomial",
+              control = list(maxit = 50)))) %>% 
+  dplyr::rename(predictor = term, logodds_b = estimate, SE = std.error, T = statistic, p = p.value) %>%   
+  arrange(p) ->  mod_results$classical_02$lm2_tidy
 
-lm(data$CYBOCS_3m ~ . , data = data_regr_univar_signif) %>% 
-  summary %>% 
-  tidy %>% 
-  dplyr::rename(predictor = term, b = estimate, SE = std.error, T = statistic, p = p.value) %>%   mutate_if(is.numeric, round, digits = 3) %>% 
-  arrange(p) ->  mod_results$classical_02$lm1_tidy
 
-
-
-mod_results$classical_02$lm1_tidy %>% 
-  kable
+mod_results$classical_02$lm2_tidy %>% 
+  kable(digits = 3)
 
 
 ```
+
+
+
 
 ## Number of significant predictors
 
 How many predictors reach statistical significance?
 
 ```{r glm2_nr_signif_preds}
-mod_results$classical_02$lm1_tidy %>% 
+mod_results$classical_02$lm2_tidy %>% 
   filter(p < .05) %>% 
   nrow
 ```
@@ -475,7 +552,7 @@ mod_results$classical_02$lm1_tidy %>%
 The same table as above, somewhat more beautiful:
 
 ```{r glm2_stargazer, results = "asis"}
-stargazer(mod_results$classical_02$lm1_tidy, type = "html")
+stargazer(mod_results$classical_02$lm2_tidy, type = "html")
 
 ```
 
@@ -483,14 +560,39 @@ stargazer(mod_results$classical_02$lm1_tidy, type = "html")
 Let's have a look at the predictors which reached statistical significance:
 
 ```{r glm2_results_signif_only}
-mod_results$classical_02$lm1_tidy %>% 
-  filter(p < .05) %>% 
-  mutate_if(is.numeric, round, digits = 2) -> mod_results$classical_02$signif_preds
+mod_results$classical_02$lm2_tidy %>% 
+  filter(p < .05)  -> mod_results$classical_02$signif_preds
 
 mod_results$classical_02$signif_preds %>% 
-  kable
+  kable(digits = 3)
 
 ```
+
+Let's convert their log odds to odds:
+
+```{r glm2_results_logodds_to_odds}
+
+data %>% 
+  dplyr::select(one_of(mod_results$classical_02$univariate_lm_selection_signif$names)) -> mod_results$classical_02$univariate_lm_selection_df 
+
+
+  glm(data$responder_3m_f ~ . , 
+      data = mod_results$classical_02$univariate_lm_selection_df, 
+      family = "binomial", 
+      control = list(maxit = 50)) -> mod_results$classical_02$fit
+  
+exp(coef(mod_results$classical_02$fit)) %>% tidy %>% setNames(c("predictor", "OR"))
+
+```
+
+Note that the levels of the outcome variable are:
+```{r levels_outcoem}
+str(data$responder_3m_f)
+unique(data$responder_3m_f)
+```
+
+where $0$ stands for "no", and $1$ for "yes".
+
 
 ## Adj. R squared
 
@@ -498,12 +600,10 @@ mod_results$classical_02$signif_preds %>%
 
 ```{r adj_rsquared_glm2}
 
-glm(data$responder_3m_f ~ .,
-               data = data_regr_univar_signif,
-               family = "binomial",
-               control = list(maxit = 50)) %>% 
-  pR2(.) %>% 
+mod_results$classical_02$fit %>% 
+  pscl::pR2(mod_results$classical_02$fit) %>% 
   print
+  
 
 ```
 
