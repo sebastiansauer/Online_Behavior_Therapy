@@ -594,6 +594,11 @@ unique(data$responder_3m_f)
 where $0$ stands for "no", and $1$ for "yes".
 
 
+```{r check_n}
+expect_equal(nrow(mod_results$classical_02$fi$data), 61)
+```
+
+
 ## Adj. R squared
 
 *Adjusted* $R^2$ of the *whole* dataset is:
