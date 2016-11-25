@@ -1006,7 +1006,7 @@ varimp_top_of_top %>%
   coord_flip() +
   xlab("predictor") +
   ylab("frequency") +
-  ggtitle("outcome: CYBOCS_3m")
+  labs(caption = "numeric outcome")
 
 ```
 
