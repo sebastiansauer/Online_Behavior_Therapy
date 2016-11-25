@@ -32,17 +32,8 @@ knitr::opts_chunk$set(echo = TRUE,
 Load libraries etc.
 ```{r libs}
 
-library(pscl)  # pseudo R^2
-library(magrittr) # piping
-library(mice)  # imputation
-library(readr) # csv import
-library(knitr) # rmarkdown
-library(tidyr) # tidying objects
-library(caret) # modeling
-library(ggplot2) # plotting
-library(tibble) # tibble
-library(dplyr) # data wrangling
-library(purrr)  # functional programming
+source("analysis/functions/load_libs.R")
+
 
 
 

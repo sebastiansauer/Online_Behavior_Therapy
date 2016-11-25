@@ -12,29 +12,7 @@ output:
 ```{r setup, include=FALSE}
 
 
-library(corrr)
-library(corrplot)
-library(mosaic)
-library(readr)
-#library(stringr)
-#library(ggvis)
-#library(pander)
-library(purrr)
-library(broom)
-library(psych)
-library(caret)
-#library(ggstance)
 library(knitr)
-library(gridExtra)
-library(tibble)
-library(GGally)
-#library(plotly)
-library(tidyr)
-#library(gridExtra)
-# library(DiagrammeR)
-library(DT)
-library(dplyr)
-library(ggplot2)
 
 
 knitr::opts_chunk$set(echo = FALSE, cache = FALSE, warning = FALSE, message = FALSE)
@@ -51,7 +29,16 @@ path_obj <- "~/Documents/OneDrive/Forschung/Online_Behavior_Therapy/data_objects
 # constants
 red1 <- "#880011"
 
+```
 
+
+```{r load_libs}
+source("analysis/functions/load_libs.R")
+```
+
+
+
+```{r load_data}
 # load data
 data <- read_csv(path_file_data)
 

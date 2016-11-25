@@ -17,22 +17,7 @@ output:
 cat("***starting\n***")
 
 
-library(testthat)  # testing
-library(leaps)  # regression leaps
-library(doMC)  # multiple cores
-library(pscl)  # pseudo R^2
-library(magrittr) # piping
-library(mice)  # imputation
-library(testthat)
-library(readr) # csv import
-library(knitr) # rmarkdown
-library(tidyr) # tibbling objects
-library(caret) # modeling
-library(ggplot2) # plotting
-library(tibble) # tibble
-library(dplyr) # data wrangling
-library(purrr)  # functional programming
-library(corrr)  # correlation helper
+source("analysis/functions/load_libs.R")
 
 
 
