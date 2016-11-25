@@ -1,0 +1,90 @@
+R version 3.3.2 (2016-10-31)
+Platform: x86_64-apple-darwin13.4.0 (64-bit)
+Running under: macOS Sierra 10.12.1
+
+locale:
+[1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+
+attached base packages:
+[1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+ [1] stringr_1.1.0     leaps_2.9         glmnet_2.0-5      testthat_1.0.2    mice_2.25        
+ [6] Rcpp_0.12.7       magrittr_1.5      pscl_1.4.9        MASS_7.3-45       doMC_1.3.4       
+[11] iterators_1.0.8   foreach_1.4.3     compute.es_0.2-4  DT_0.2            tidyr_0.6.0      
+[16] tibble_1.2        gridExtra_2.2.1   caret_6.0-73      psych_1.6.9       broom_0.4.1      
+[21] purrr_0.2.2.9000  readr_1.0.0       mosaic_0.14.4     Matrix_1.2-7.1    mosaicData_0.14.0
+[26] ggplot2_2.2.0     lattice_0.20-34   corrplot_0.77     corrr_0.2.1       dplyr_0.5.0      
+[31] knitr_1.15       
+
+loaded via a namespace (and not attached):
+ [1] reshape2_1.4.2      splines_3.3.2       colorspace_1.3-0    htmltools_0.3.5    
+ [5] stats4_3.3.2        mgcv_1.8-16         survival_2.40-1     ModelMetrics_1.1.0 
+ [9] nloptr_1.0.4        foreign_0.8-67      DBI_0.5-1           plyr_1.8.4         
+[13] MatrixModels_0.4-1  munsell_0.4.3       gtable_0.2.0        htmlwidgets_0.8    
+[17] codetools_0.2-15    SparseM_1.74        quantreg_5.29       pbkrtest_0.4-6     
+[21] scales_0.4.1        lme4_1.1-12         mnormt_1.5-5        digest_0.6.10      
+[25] stringi_1.1.2       grid_3.3.2          tools_3.3.2         lazyeval_0.2.0.9000
+[29] ggdendro_0.1-20     crayon_1.3.2        car_2.1-3           assertthat_0.1     
+[33] minqa_1.2.4         rpart_4.1-10        R6_2.2.0            nnet_7.3-12        
+[37] nlme_3.1-128       
+R version 3.3.2 (2016-10-31)
+Platform: x86_64-apple-darwin13.4.0 (64-bit)
+Running under: macOS Sierra 10.12.1
+
+locale:
+[1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+
+attached base packages:
+[1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+ [1] stringr_1.1.0     leaps_2.9         glmnet_2.0-5      testthat_1.0.2    mice_2.25        
+ [6] Rcpp_0.12.7       magrittr_1.5      pscl_1.4.9        MASS_7.3-45       doMC_1.3.4       
+[11] iterators_1.0.8   foreach_1.4.3     compute.es_0.2-4  DT_0.2            tidyr_0.6.0      
+[16] tibble_1.2        gridExtra_2.2.1   caret_6.0-73      psych_1.6.9       broom_0.4.1      
+[21] purrr_0.2.2.9000  readr_1.0.0       mosaic_0.14.4     Matrix_1.2-7.1    mosaicData_0.14.0
+[26] ggplot2_2.2.0     lattice_0.20-34   corrplot_0.77     corrr_0.2.1       dplyr_0.5.0      
+[31] knitr_1.15       
+
+loaded via a namespace (and not attached):
+ [1] reshape2_1.4.2      splines_3.3.2       colorspace_1.3-0    htmltools_0.3.5    
+ [5] stats4_3.3.2        mgcv_1.8-16         survival_2.40-1     ModelMetrics_1.1.0 
+ [9] nloptr_1.0.4        foreign_0.8-67      DBI_0.5-1           plyr_1.8.4         
+[13] MatrixModels_0.4-1  munsell_0.4.3       gtable_0.2.0        htmlwidgets_0.8    
+[17] codetools_0.2-15    SparseM_1.74        quantreg_5.29       pbkrtest_0.4-6     
+[21] scales_0.4.1        lme4_1.1-12         mnormt_1.5-5        digest_0.6.10      
+[25] stringi_1.1.2       grid_3.3.2          tools_3.3.2         lazyeval_0.2.0.9000
+[29] ggdendro_0.1-20     crayon_1.3.2        car_2.1-3           assertthat_0.1     
+[33] minqa_1.2.4         rpart_4.1-10        R6_2.2.0            nnet_7.3-12        
+[37] nlme_3.1-128       
+R version 3.3.2 (2016-10-31)
+Platform: x86_64-apple-darwin13.4.0 (64-bit)
+Running under: macOS Sierra 10.12.1
+
+locale:
+[1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+
+attached base packages:
+[1] parallel  stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+ [1] stringr_1.1.0     leaps_2.9         glmnet_2.0-5      testthat_1.0.2    mice_2.25        
+ [6] Rcpp_0.12.7       magrittr_1.5      pscl_1.4.9        MASS_7.3-45       doMC_1.3.4       
+[11] iterators_1.0.8   foreach_1.4.3     compute.es_0.2-4  DT_0.2            tidyr_0.6.0      
+[16] tibble_1.2        gridExtra_2.2.1   caret_6.0-73      psych_1.6.9       broom_0.4.1      
+[21] purrr_0.2.2.9000  readr_1.0.0       mosaic_0.14.4     Matrix_1.2-7.1    mosaicData_0.14.0
+[26] ggplot2_2.2.0     lattice_0.20-34   corrplot_0.77     corrr_0.2.1       dplyr_0.5.0      
+[31] knitr_1.15       
+
+loaded via a namespace (and not attached):
+ [1] reshape2_1.4.2      splines_3.3.2       colorspace_1.3-0    htmltools_0.3.5    
+ [5] stats4_3.3.2        mgcv_1.8-16         survival_2.40-1     ModelMetrics_1.1.0 
+ [9] nloptr_1.0.4        foreign_0.8-67      DBI_0.5-1           plyr_1.8.4         
+[13] MatrixModels_0.4-1  munsell_0.4.3       gtable_0.2.0        htmlwidgets_0.8    
+[17] codetools_0.2-15    SparseM_1.74        quantreg_5.29       pbkrtest_0.4-6     
+[21] scales_0.4.1        lme4_1.1-12         mnormt_1.5-5        digest_0.6.10      
+[25] stringi_1.1.2       grid_3.3.2          tools_3.3.2         lazyeval_0.2.0.9000
+[29] ggdendro_0.1-20     crayon_1.3.2        car_2.1-3           assertthat_0.1     
+[33] minqa_1.2.4         rpart_4.1-10        R6_2.2.0            nnet_7.3-12        
+[37] nlme_3.1-128       
