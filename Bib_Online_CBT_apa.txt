@@ -1,0 +1,41 @@
+Zeileis, A., Kleiber, C., & Jackman, S. (2008). Regression Models for Count Data in {R}. Journal of Statistical Software, 27(8). Retrieved from http://www.jstatsoft.org/v27/i08/
+Xie, Y. (2014). knitr: A Comprehensive Tool for Reproducible Research in {R}. In V. Stodden, F. Leisch, & R. D. Peng (Eds.), Implementing Reproducible Computational Research. Chapman and Hall/CRC. Retrieved from http://www.crcpress.com/product/isbn/9781466561595
+Xie, Y. (2015). Dynamic Documents with {R} and knitr (2nd ed.). Boca Raton, Florida: Chapman and Hall/CRC. Retrieved from http://yihui.name/knitr/
+Xie, Y. (2016). DT: A Wrapper of the JavaScript Library “DataTables.” Retrieved from https://cran.r-project.org/package=DT
+Xie, Y. (2016). knitr: A General-Purpose Package for Dynamic Report Generation in R. Retrieved from http://yihui.name/knitr/
+Wickham, H., Hester, J., & Francois, R. (2016). readr: Read Tabular Data. Retrieved from https://cran.r-project.org/package=readr
+Wickham, H., Francois, R., & Müller, K. (2016). tibble: Simple Data Frames. Retrieved from https://cran.r-project.org/package=tibble
+Wickham, H., & Francois, R. (2016). dplyr: A Grammar of Data Manipulation. Retrieved from https://cran.r-project.org/package=dplyr
+Wickham, H. (2009). ggplot2: Elegant Graphics for Data Analysis. Springer-Verlag New York. Retrieved from http://ggplot2.org
+Wickham, H. (n.d.). purrr: Functional Programming Tools. Retrieved from https://github.com/hadley/purrr
+Wickham, H. (2016). tidyr: Easily Tidy Data with `spread()` and `gather()` Functions. Retrieved from https://cran.r-project.org/package=tidyr
+Wickham, H. (2011). testthat: Get Started with Testing. The R Journal, 3, 5–10. Retrieved from http://journal.r-project.org/archive/2011-1/RJournal_2011-1_Wickham.pdf
+Wickham, H. (2016). stringr: Simple, Consistent Wrappers for Common String Operations. Retrieved from https://cran.r-project.org/package=stringr
+Wei, T., & Simko, V. (2016). corrplot: Visualization of a Correlation Matrix. Retrieved from https://cran.r-project.org/package=corrplot
+Venables, W. N., & Ripley, B. D. (2002). Modern Applied Statistics with S (Fourth). New York: Springer. Retrieved from http://www.stats.ox.ac.uk/pub/MASS4
+van Buuren, S., & Groothuis-Oudshoorn, K. (2011). mice: Multivariate Imputation by Chained Equations in R. Journal of Statistical Software; Vol 1, Issue 3 (2011)  . http://doi.org/10.18637/jss.v045.i03
+using Fortran code by Alan Miller, T. L. (2009). leaps: regression subset selection. Retrieved from https://cran.r-project.org/package=leaps
+Tenenbaum, D., & Team, B. (2016). BiocInstaller: Install/Update Bioconductor, CRAN, and github Packages.
+Simon, N., Friedman, J., Hastie, T., & Tibshirani, R. (2011). Regularization Paths for Cox’s Proportional Hazards Model via Coordinate Descent. Journal of Statistical Software, 39(5), 1–13. Retrieved from http://www.jstatsoft.org/v39/i05/
+Schloerke, B., Crowley, J., Cook, D., Briatte, F., Marbach, M., Thoen, E., … Larmarange, J. (2016). GGally: Extension to “ggplot2.” Retrieved from https://cran.r-project.org/package=GGally
+Sarkar, D. (2008). Lattice: Multivariate Data Visualization with R. New York: Springer. Retrieved from http://lmdvr.r-forge.r-project.org
+Robinson, D. (2016). broom: Convert Statistical Analysis Objects into Tidy Data Frames. Retrieved from https://cran.r-project.org/package=broom
+Rinker, T. W., & Kurkiewicz, D. (2015). {pacman}: {P}ackage Management for {R}. Buffalo, New York. Retrieved from http://github.com/trinker/pacman
+Revelle, W. (2016). psych: Procedures for Psychological, Psychometric, and Personality Research. Evanston, Illinois. Retrieved from https://cran.r-project.org/package=psych
+Re, A. C. Del. (2013). compute.es: Compute Effect Sizes. R Package. Retrieved from http://cran.r-project.org/web/packages/compute.es
+R Core Team. (2016). R: A Language and Environment for Statistical Computing. Vienna, Austria. Retrieved from https://www.r-project.org/
+Pruim, R., Kaplan, D., & Horton, N. (2016). mosaicData: Project MOSAIC Data Sets. Retrieved from https://cran.r-project.org/package=mosaicData
+Pruim, R., Kaplan, D. T., & Horton, N. J. (2016). mosaic: Project MOSAIC Statistics and Mathematics Teaching Utilities. Retrieved from https://cran.r-project.org/package=mosaic
+Jackson, S. (2016). corrr: Correlations in R. Retrieved from https://cran.r-project.org/package=corrr
+Jackman, S. (2015). {pscl}: Classes and Methods for {R} Developed in the Political Science Computational Laboratory, Stanford University. Stanford, California. Retrieved from http://pscl.stanford.edu/
+Hlavac, M. (2015). stargazer: Well-Formatted Regression and Summary Statistics Tables. Cambridge, USA. Retrieved from http://cran.r-project.org/package=stargazer
+from Jed Wing, M. K. C., Weston, S., Williams, A., Keefer, C., Engelhardt, A., Cooper, T., … Hunt., T. (2016). caret: Classification and Regression Training. Retrieved from https://cran.r-project.org/package=caret
+Friedman, J., Hastie, T., & Tibshirani, R. (2010). Regularization Paths for Generalized Linear Models via Coordinate Descent. Journal of Statistical Software, 33(1), 1–22. Retrieved from http://www.jstatsoft.org/v33/i01/
+Eddelbuettel, D., & François, R. (2011). {Rcpp}: Seamless {R} and {C++} Integration. Journal of Statistical Software, 40(8), 1–18. Retrieved from http://www.jstatsoft.org/v40/i08/
+Eddelbuettel, D. (2013). Seamless {R} and {C++} Integration with {Rcpp}. New York: Springer.
+Bates, D., & Maechler, M. (2016). Matrix: Sparse and Dense Matrix Classes and Methods. Retrieved from https://cran.r-project.org/package=Matrix
+Bache, S. M., & Wickham, H. (2014). magrittr: A Forward-Pipe Operator for R. Retrieved from https://cran.r-project.org/package=magrittr
+Auguie, B. (2016). gridExtra: Miscellaneous Functions for “Grid” Graphics. Retrieved from https://cran.r-project.org/package=gridExtra
+Analytics, R., & Weston, S. (2015). foreach: Provides Foreach Looping Construct for R. Retrieved from https://cran.r-project.org/package=foreach
+Analytics, R., & Weston, S. (2015). iterators: Provides Iterator Construct for R. Retrieved from https://cran.r-project.org/package=iterators
+Analytics, R., & Weston, S. (2015). doMC: Foreach Parallel Adaptor for “parallel.” Retrieved from https://cran.r-project.org/package=doMC

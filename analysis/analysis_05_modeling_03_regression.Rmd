@@ -18,7 +18,7 @@ Setup knitr.
 
 ```{r setup, include=FALSE}
 
-message("***starting\n***")
+message("*********************starting*********************\n")
 library(knitr)
 
 ```
@@ -53,7 +53,7 @@ regr_varimp <- list()  # var.imp only
 
 
 # overhead
-write_to_file <- FALSE
+write_to_file <- TRUE
 registerDoMC(cores = 4)
 
 
@@ -76,12 +76,18 @@ source("analysis/functions/paths.R")
 ```
 
 
+
+```{r load_funs}
+source("~/Documents/Literatur/Methoden_Literatur/R/R-functions/is_binary.R")
+source("~/Documents/Literatur/Methoden_Literatur/R/R-functions/modelfit.R")
+
+```
+
+
+
 ```{r read_data}
 data_regr <- read_csv("raw_data/data_mod3.csv")  
 
-is_binary <- function(var){
-  return(all(var %in% c(0,1)))
-}
 
 
 # change strange factor levels to well-behaved ones
@@ -296,13 +302,17 @@ do_lasso <- function(data = data_regr, p = .8, save = FALSE){
   
   p2
   
-  cat(paste("R squared is:", round(R2(pred_obs$pred, pred_obs$obs), 2), "\n"))
+ 
   
-  results_lasso$R2 <- R2(pred_obs$pred, pred_obs$obs)
   
-  cat(paste("RMSE is:", round(RMSE(pred_obs$pred, pred_obs$obs), 2), "\n"))
+
+  cat(paste("R squared is:", round(R_2(pred_obs$pred, pred_obs$obs), 2), "\n"))
   
-  results_lasso$RMSE <- RMSE(pred_obs$pred, pred_obs$obs)
+  results_lasso$R_2 <- R_2(pred = pred_obs$pred, obs = pred_obs$obs)
+  
+  cat(paste("RMSE is:", round(RMSE(pred = pred_obs$pred, obs = pred_obs$obs), 2), "\n"))
+  
+  results_lasso$RMSE <- RMSE(pred = pred_obs$pred, obs = pred_obs$obs)
   
   cat(paste("Mean absolute error is:", round(mean(abs(pred_obs$pred - pred_obs$obs)), 2), "\n"))
   
@@ -322,7 +332,7 @@ do_lasso <- function(data = data_regr, p = .8, save = FALSE){
   results_lasso$plots[[2]] <- p2
   
   return(results_lasso)
-}
+} # End of function "do lasso"
 
 ```
 
@@ -442,11 +452,11 @@ Ok, and now we predict the values of the test sample.
 rf1_predict <- predict(rf_regr_1, newdata = test_mm)
 rf1_predict
 rf1_RMSE_test <- sqrt(mean((rf1_predict - test_sample$CYBOCS_3m)^2))
-rf1_R2_test <- R2(rf1_predict, test_sample$CYBOCS_3m)
+rf1_R_2_test <- R_2(rf1_predict, test_sample$CYBOCS_3m)
 
 ```
 
-RMSE amounts to `r rf1_RMSE_test`; $R^2$ to `r rf1_R2_test`.
+RMSE amounts to `r rf1_RMSE_test`; $R^2$ to `r rf1_R_2_test`.
 
 
 ## SVM
@@ -516,12 +526,12 @@ Ok, and now we predict the values of the test sample.
 ```{r svm1_predict}
 svm1_predict <- predict(svm_regr_1, newdata = test_mm)
 svm1_RMSE_test <- sqrt(mean((svm1_predict - test_sample$CYBOCS_3m)^2))
-svm1_R2_test <- R2(svm1_predict, test_sample$CYBOCS_3m)
+svm1_R_2_test <- R_2(svm1_predict, test_sample$CYBOCS_3m)
 
 
 ```
 
-RMSE amounts to `r svm1_RMSE_test`; $R^2$ to `r svm1_R2_test`.
+RMSE amounts to `r svm1_RMSE_test`; $R^2$ to `r svm1_R_2_test`.
 
 
 ## Boosting (Stochastic Gradient Boosting)
@@ -589,11 +599,11 @@ Ok, and now we predict the values of the test sample.
 ```{r gbm1_predicdt}
 gbm1_predict <- predict(gbm_regr_1, newdata = test_mm)
 gbm1_RMSE_test <- sqrt(mean((gbm1_predict - test_sample$CYBOCS_3m)^2))
-gbm1_R2_test <- R2(gbm1_predict, test_sample$CYBOCS_3m)
+gbm1_R_2_test <- R_2(gbm1_predict, test_sample$CYBOCS_3m)
 
 ```
 
-RMSE amounts to `r gbm1_RMSE_test`. Slightly better than the model before. $R^2$ amounts to `r gbm1_R2_test`.
+RMSE amounts to `r gbm1_RMSE_test`. Slightly better than the model before. $R^2$ amounts to `r gbm1_R_2_test`.
 
 
 ## Plain regression with univariate feature selection
@@ -681,8 +691,8 @@ mod_results$glmfit1$lm1_tidy %>%
 
 The same table, somewhat more beautiful:
 
-```{r lm1_stargazer, results = "asis"}
-stargazer(mod_results$glmfit1$lm1_tidy, type = "html")
+```{r lm1_htmltable, results = "asis"}
+htmlTable(mod_results$glmfit1$lm1_tidy)
 
 ```
 
@@ -742,11 +752,11 @@ lm1_predict <- predict((lm1), newdata = test_sample)
 # str(lm1_predict)
 summary(lm1_predict)
   
-R2_lm1 <- R2(lm1_predict, test_sample$CYBOCS_3m)  
+R_2_lm1 <- R_2(lm1_predict, test_sample$CYBOCS_3m)  
 RMSE_lm_uni_Model2 <- RMSE(lm1_predict, test_sample$CYBOCS_3m)
 ```
 
-Here, the $R^2$ is `r round(R2_lm1, 2)`; the RMSE is `r round(RMSE_lm_uni_Model2, 2)`.
+Here, the $R^2$ is `r round(R_2_lm1, 2)`; the RMSE is `r round(RMSE_lm_uni_Model2, 2)`.
 
 
 ## Best subset Linear Model
@@ -781,17 +791,17 @@ Ok, but which model (ie, with what number of predictors) should we choose?
 
 Let's look at *adjusted* $R^2$.
 
-```{r}
+```{r lm_regsubsets_R2}
 plot(LM_regsubsets_summary$adjr2, type = "l")
 nr_predictors_adjr2 <- which.max(LM_regsubsets_summary$adjr2)
-points(nr_predictors_adjr2, LM_regsubsets_summary$adjr2[nr_predictors_adjr2], col = "red", cex = 2, pch = 20)
+points(nr_predictors_adjr2, LM_regsubsets_summary$adjR2[nr_predictors_adjr2], col = "red", cex = 2, pch = 20)
 ```
 
 That is, the model suggests `r nr_predictors_adjr2` predictors to be included.
 
 Let's look at $BIC$.
 
-```{r}
+```{r lm_regsubsets_BIC}
 plot(LM_regsubsets_summary$bic, type = "l")
 nr_predictors_bic <- which.min(LM_regsubsets_summary$bic)
 points(nr_predictors_bic, LM_regsubsets_summary$bic[nr_predictors_bic], col = "red", cex = 2, pch = 20)
@@ -804,7 +814,7 @@ That is, the model suggests `r nr_predictors_bic` predictors to be included.
 $BIC$ is more strict in terms of allowing predictors to enter the model. So let's look finally to $C_p$:
 
 
-```{r}
+```{r lm_regsubsets_cp}
 plot(LM_regsubsets_summary$cp, type = "l")
 nr_predictors_cp <- which.min(LM_regsubsets_summary$cp)
 points(nr_predictors_cp, LM_regsubsets_summary$cp[nr_predictors_cp], col = "red", cex = 2, pch = 20)
@@ -815,7 +825,7 @@ That is, the model suggests `r nr_predictors_adjr2` predictors to be included.
 
 Ok, so let's stick to `r nr_predictors_adjr2` predictors. These are:
 
-```{r}
+```{r lm_regsubsets_adj_R2}
 coef(LM_regsubsets, nr_predictors_adjr2)[-1]
 best_preds <- names(coef(LM_regsubsets, nr_predictors_adjr2))[-1]  # first is "intercept"
 
@@ -866,11 +876,11 @@ LM_regsubsets_predict <- predict(LM_regsubsets, newdata = test_sample, id = nr_p
 # str(dummy_model2)
 summary(LM_regsubsets_predict)
   
-R2_LM_regsubsets <- R2(LM_regsubsets_predict, test_sample$CYBOCS_3m)  
+R_2_LM_regsubsets <- R_2(LM_regsubsets_predict, test_sample$CYBOCS_3m)  
 RMSE_LM_regsubsets <- RMSE(LM_regsubsets_predict, test_sample$CYBOCS_3m)
 ```
 
-Here, the $R^2$ is `r round(R2_LM_regsubsets, 2)`; the RMSE is `r round(RMSE_LM_regsubsets, 2)`.
+Here, the $R^2$ is `r round(R_2_LM_regsubsets, 2)`; the RMSE is `r round(RMSE_LM_regsubsets, 2)`.
 
 
 
@@ -882,12 +892,12 @@ Here, the $R^2$ is `r round(R2_LM_regsubsets, 2)`; the RMSE is `r round(RMSE_LM_
 regr_results <- tibble(
    name_models = c("Lasso_1", "Lasso_2", "RF", "SVM", "GBM", "LM_uni", "LM_regsubsets"),
   RMSE_models = c(lasso_regr_1$RMSE, lasso_regr_2$RMSE, rf1_RMSE_test, svm1_RMSE_test, gbm1_RMSE_test, RMSE_lm_uni_Model2, RMSE_LM_regsubsets),
-  R2_models = c(lasso_regr_1$R2, lasso_regr_2$R2, rf1_R2_test, svm1_R2_test, gbm1_R2_test, R2_lm1, R2_LM_regsubsets)
+  R_2_models = c(lasso_regr_1$R_2, lasso_regr_2$R_2, rf1_R_2_test, svm1_R_2_test, gbm1_R_2_test, R_2_lm1, R_2_LM_regsubsets)
 )
 
 regr_results %>% 
-  dplyr::select(name_models, R2_models, RMSE_models) %>% 
-  dplyr::rename(`model` = name_models, `Rsquared` = R2_models, RMSE = RMSE_models) %>% 
+  dplyr::select(name_models, R_2_models, RMSE_models) %>% 
+  dplyr::rename(`model` = name_models, `Rsquared` = R_2_models, RMSE = RMSE_models) %>% 
   mutate_if(is.numeric, round, digits = 2) %>% 
   arrange(desc(Rsquared)) -> regr_results
 
@@ -997,6 +1007,9 @@ varimp_top$name %>%
    tibble(predictor = names(.), freq = as.vector(.)) -> varimp_top_of_top
 
 
+
+varimp_top_of_top$predictor <- recode_predictor_names_3(varimp_top_of_top$predictor)
+
 kable(varimp_top_of_top)
 
 
@@ -1005,8 +1018,7 @@ varimp_top_of_top %>%
   geom_bar(stat="identity") +
   coord_flip() +
   xlab("predictor") +
-  ylab("frequency") +
-  labs(caption = "numeric outcome")
+  ylab("frequency (numeric outcome)") 
 
 ```
 

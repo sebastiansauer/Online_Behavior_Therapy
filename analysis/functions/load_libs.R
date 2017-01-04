@@ -3,6 +3,7 @@
 
 
 packs_needed <- c("knitr",
+             "gbm",
         "corrr",
         "corrplot",
         "mosaic",
@@ -15,9 +16,7 @@ packs_needed <- c("knitr",
         "gridExtra",
         "tibble",
         "tidyr",
-        #"DiagrammeR",
         "DT",
-        "dplyr",  # prio 1
         "ggplot2",  # prio 1
         "compute.es",
         "doMC",
@@ -27,12 +26,19 @@ packs_needed <- c("knitr",
         "testthat",
         "glmnet",
         "leaps",
-        "stringr"
+        "stringr",
+        "htmlTable",
+        "dplyr"
         )
 
-packs_installed <- packs_needed %in% rownames(installed.packages())
-if(any(!packs_installed)) install.packages(packs_needed[!packs_installed])
-lapply(packs_needed, library, character.only=T)
+
+
+pacman::p_load(char = packs_needed)
+
+
+# packs_installed <- packs_needed %in% rownames(installed.packages())
+# if(any(!packs_installed)) install.packages(packs_needed[!packs_installed])
+# lapply(packs_needed, library, character.only=T)
 
 
 
@@ -100,9 +106,9 @@ lapply(packs_needed, library, character.only=T)
 # library(purrr)  # functional programming
 # library(stringr)
 # library(corrr)
-}
 
-rm(packs_installed)
+
+# rm(packs_installed)
 rm(packs_needed)
 
 message("libaries laoded.")
