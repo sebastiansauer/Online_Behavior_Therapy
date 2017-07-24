@@ -1,5 +1,7 @@
 This repository provides detailled source code (R) and results for the research paper *Prediction of Internet-delivered cognitive behavior therapy outcome for pediatric obsessive-compulsive disorder: Comparison of regression analytic and machine learning approaches*. 
 
+This paper appears in "International Journal of Methods in Psychiatric Research".
+
 This repository serves two purposes: first, it documents our analyses (for machine learning models), and, second, it provides supplementary results (more details).
 
 The corresponding author of this paper is [Fabian Lenhard](<fabian.lenhard@ki.se>).
